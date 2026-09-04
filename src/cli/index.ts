@@ -4,6 +4,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { diffCommand } from "./diff-command.js";
 import { exportCommand } from "./export-command.js";
+import { renderCommand } from "./render-command.js";
+import { RenderUsageError } from "../snapshot/render-views.js";
 import { lintCommand } from "./lint-command.js";
 import { loginCommand } from "./login-command.js";
 import { initCommand } from "./init-command.js";
@@ -25,6 +27,7 @@ const USAGE = `code2flow — living user-flow canvas from a web codebase (100% l
   code2flow login <repo> --url <devServer>       sign in by hand once; the session is reused by snapshot
   code2flow serve <repo>                         open the canvas on http://127.0.0.1:4317
   code2flow export <repo> [--feature id]         self-contained HTML (whole app, or one per feature)
+  code2flow render <repo> [--png] [--pdf] [--feature id] [--story id] [--out dir] [--scale 2]  PNG/PDF hand-outs
   code2flow stories scaffold <repo> <prd.md>     prompt pack for writing code2flow.stories.json from a PRD
   code2flow stories validate <repo>              check the Story Manifest against the graph
   code2flow lint <repo> [--fail-on error|warn]   broken links, orphans, dead-ends, needs-sample, captures
@@ -32,8 +35,8 @@ const USAGE = `code2flow — living user-flow canvas from a web codebase (100% l
 `;
 
 /** Flags that take a value: `--flag --other` or a trailing `--flag` is a usage error, not silently `true`. */
-const VALUE_FLAGS = new Set(["url", "storage-state", "concurrency", "feature", "out", "from", "to", "max", "dev", "fail-on"]);
-const BOOLEAN_FLAGS = new Set(["orphans", "dead-ends", "shell", "json", "headed", "exit-code", "no-skills"]);
+const VALUE_FLAGS = new Set(["url", "storage-state", "concurrency", "feature", "story", "out", "scale", "from", "to", "max", "dev", "fail-on"]);
+const BOOLEAN_FLAGS = new Set(["orphans", "dead-ends", "shell", "json", "headed", "exit-code", "no-skills", "png", "pdf"]);
 
 /** Tiny argv parser: positionals + --flag value / --flag. No dependency needed for nine commands. */
 export function parseArgs(argv: string[]): { command: string; positionals: string[]; flags: Record<string, string | true>; errors: string[] } {
@@ -68,6 +71,7 @@ export async function main(argv: string[]): Promise<number> {
       case "login": if (!repo) return usage("login: missing <repo>"); await loginCommand(repo, flags); return 0;
       case "serve": if (!repo) return usage("serve: missing <repo>"); await serveCommand(repo, VIEWER_DIR); await new Promise(() => {}); return 0; // serves until Ctrl+C
       case "export": if (!repo) return usage("export: missing <repo>"); await exportCommand(repo, VIEWER_DIR, flags); return 0;
+      case "render": if (!repo) return usage("render: missing <repo>"); return await renderCommand(repo, VIEWER_DIR, flags);
       case "stories": if (!positionals[0] || !positionals[1]) return usage("stories: usage  code2flow stories scaffold <repo> <prd.md> | validate <repo>"); return await storiesCommand(positionals[0], positionals[1], positionals[2]); // sub-command first, then <repo>
       case "lint": if (!repo) return usage("lint: missing <repo>"); return await lintCommand(repo, flags);
       case "diff": if (!repo) return usage("diff: missing <repo>"); return await diffCommand(repo, flags);
@@ -76,7 +80,7 @@ export async function main(argv: string[]): Promise<number> {
     }
   } catch (err) {
     console.error(`${command}: ${(err as Error).message}`);
-    return err instanceof RunAbort ? 2 : 1;
+    return err instanceof RunAbort || err instanceof RenderUsageError ? 2 : 1;
   }
 }
 

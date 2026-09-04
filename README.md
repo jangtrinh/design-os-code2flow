@@ -2,7 +2,7 @@
 
 A local CLI that turns a web codebase into a living user-flow canvas: every screen (route, modal, drawer, tab, wizard step) is a real screenshot, every arrow is an action found in the code with `file:line` evidence and a confidence tier. Nothing leaves your machine.
 
-Supported today: Next.js App Router. Other adapters are planned (ADR-0002).
+Supported today: Next.js App Router, React Router (v6/v7), static HTML folders. See [docs/adapters.md](docs/adapters.md).
 
 ## Install (for a PO or a teammate)
 
@@ -24,6 +24,7 @@ npx code2flow scan     /path/to/repo         # → /path/to/repo/.code2flow/grap
 npx code2flow snapshot /path/to/repo --url http://127.0.0.1:3000   # screenshots against your dev server
 npx code2flow serve    /path/to/repo         # http://127.0.0.1:4317
 npx code2flow export   /path/to/repo         # one self-contained HTML, opens offline
+npx code2flow render   /path/to/repo         # PNG per view + one PDF, for hand-outs
 ```
 
 Optional: `login` (sign in once, reused by `snapshot`), `stories scaffold|validate` (user-story lanes from a PRD), `paths` (how users get from A to B, with evidence), `lint` and `diff` (CI).

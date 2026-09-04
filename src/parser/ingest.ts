@@ -2,9 +2,11 @@ import { resolve } from "node:path";
 import type { CanonicalFlowGraph } from "../schema/index.js";
 import type { IngestorAdapter, IngestResult } from "./adapter-types.js";
 import { nextjsAppRouterAdapter } from "./nextjs-app-router/adapter.js";
+import { reactRouterAdapter } from "./react-router/adapter.js";
+import { staticHtmlAdapter } from "./static-html/adapter.js";
 
 /** Adapters in detection order; the first whose `detect` returns non-null wins (ADR-0002). */
-export const adapters: IngestorAdapter[] = [nextjsAppRouterAdapter as IngestorAdapter];
+export const adapters: IngestorAdapter[] = [nextjsAppRouterAdapter as IngestorAdapter, reactRouterAdapter as IngestorAdapter, staticHtmlAdapter as IngestorAdapter];
 
 export function detectAdapter(rootDir: string): { adapter: IngestorAdapter; detected: unknown } | null {
   for (const adapter of adapters) { const detected = adapter.detect(rootDir); if (detected) return { adapter, detected }; }

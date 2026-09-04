@@ -14,6 +14,9 @@ export interface PageLike {
   setViewportSize(size: { width: number; height: number }): Promise<void>;
   evaluate<T>(source: string): Promise<T>;
   screenshot(opts: Record<string, unknown>): Promise<unknown>;
+  setContent(html: string, opts?: Record<string, unknown>): Promise<void>;
+  pdf(opts: Record<string, unknown>): Promise<unknown>;
+  keyboard: { press(key: string): Promise<void> };
   locator(sel: string): { first(): { count(): Promise<number>; boundingBox(): Promise<{ width: number; height: number } | null>; screenshot(opts: Record<string, unknown>): Promise<unknown> } };
   url(): string;
   close(): Promise<void>;

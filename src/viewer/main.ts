@@ -11,6 +11,7 @@ import { presenterHud, renderLanes } from "./views-present.js";
 /** Loads `.code2flow/*` from the serving CLI (or an inlined payload in exports) and boots the canvas. */
 export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
   const stage = document.getElementById("stage")!;
+  const printMode = new URLSearchParams(location.search).get("render") === "print";
   let data: ViewerData;
   try { data = await loadData(); } catch (err) { emptyState(stage, `Could not load the flow data: ${(err as Error).message}`); return; }
   if (!data.features.length) data.features = defaultFeatures(data.graph.screens.filter((s) => s.kind === "route").map((s) => s.id));
@@ -20,6 +21,7 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
   const view = document.getElementById("view") as unknown as SVGGElement; const canvas = new Canvas(stage, view);
   let applyingHash = false;
   const render = (): void => {
+    if (printMode && state.mode === "present") state.step = -1; // Hand-outs show the complete lane, never a dimmed focused step.
     view.replaceChildren(); renderRail(nav); renderCrumb(nav);
     document.getElementById("fit")?.addEventListener("click", () => canvas.fit());
     document.getElementById("z-in")?.addEventListener("click", () => canvas.zoomCenter(1.2));

@@ -2,7 +2,7 @@
 
 Code2Flow turns a web codebase into a living user-flow canvas: every screen (route, modal, drawer, tab, wizard step) is a real screenshot, every arrow is an Action Trigger with `file:line` evidence and a confidence tier. Everything runs on your machine; nothing is uploaded.
 
-Supported today: **Next.js App Router** (`app/` or `src/app/`). Pages Router, React Router and static HTML adapters are planned (ADR-0002).
+Supported today: **Next.js App Router** (`app/` or `src/app/`), **React Router** (v6/v7 route trees in Vite or CRA apps) and **static HTML** folders. Detection order: Next → React Router → static HTML; `scan` prints the adapter it chose. Details and known misses: [adapters](adapters.md).
 
 ## 0. One command (recommended)
 
@@ -54,6 +54,8 @@ npx code2flow export /path/to/repo --feature iam
 ```
 
 The file opens offline and needs no server: viewer, fonts, data and screenshots are inside. When the whole app exceeds 14 MB, one file per feature is written; each still carries the full graph and only the screenshots are split.
+
+`npx code2flow render /path/to/repo` writes PNG hand-outs for the product map, every feature and every story lane plus `.code2flow/render/<product>-flows.pdf`. Use `--feature iam`, `--story invite-user`, `--png`, `--pdf`, `--out dir`, or `--scale 1` to narrow output; rendering remains local and reuses (or creates) the offline export HTML.
 
 ## 5. Stories (optional, recommended)
 

@@ -42,7 +42,7 @@ export function renderCrumb(h: NavHandlers): void {
   const hud = document.getElementById("hud")!;
   const kbd = (k: string): string => `<span class="kbd">${k}</span>`;
   hud.hidden = state.mode === "present";
-  hud.innerHTML = state.level === "feature" ? `<button id="z-out" class="icon-btn" aria-label="Zoom out">−</button><button id="z-in" class="icon-btn" aria-label="Zoom in">+</button><button id="fit" class="icon-btn" aria-label="Fit">⌗</button><span>${kbd("F")}</span><span>${kbd("[")}${kbd("]")}</span>` : `<span>${kbd("/")}</span>`;
+  hud.innerHTML = state.level === "feature" ? `<button id="z-out" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="Zoom out">−</button><button id="z-in" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="Zoom in">+</button><button id="fit" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="Fit">⌗</button><span>${kbd("F")}</span><span>${kbd("[")}${kbd("]")}</span>` : `<button id="z-out" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="Zoom out">−</button><button id="z-in" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="Zoom in">+</button><button id="fit" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="Fit">⌗</button><span>${kbd("/")}</span>`;
   document.getElementById("nav-back")!.innerHTML = ICON_L;
 }
 
