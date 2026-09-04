@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm, registry-url: "https://registry.npmjs.org" }
+        with: { node-version: 22, cache: npm } # no registry-url: setup-node would write a placeholder _authToken that overrides OIDC
       - run: npm i -g npm@latest # trusted publishing needs npm >= 11.5.1; setup-node ships npm 10
       - run: npm ci
       - run: npx tsc --noEmit
