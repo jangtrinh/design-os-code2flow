@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -8,6 +8,7 @@ import { staticHtmlAdapter } from "../src/parser/static-html/adapter.js";
 import { diffFlow } from "../src/lint/flow-diff.js";
 import { lintFlow } from "../src/lint/flow-lint.js";
 import type { CanonicalFlowGraph } from "../src/schema/index.js";
+import { copyFixture } from "./helpers/fixture-copy.js";
 
 const FIXTURE = fileURLToPath(new URL("../fixtures/synthetic/app-router-basic", import.meta.url));
 const STATIC_FIXTURE = fileURLToPath(new URL("../fixtures/synthetic/static-site", import.meta.url));
@@ -48,5 +49,17 @@ describe("flow lint + diff (pure over CanonicalFlowGraph)", () => {
     const routerGraph = (await reactRouterAdapter.ingest(ROUTER_FIXTURE, reactRouterAdapter.detect(ROUTER_FIXTURE)!)).graph;
     expect(lintFlow({ graph: staticGraph }).findings.find((finding) => finding.rule === "broken-link")?.severity).toBe("error");
     expect(lintFlow({ graph: routerGraph }).findings.find((finding) => finding.rule === "broken-link")?.severity).toBe("error");
+  });
+  it("counts existing public assets without emitting a broken-link lint error", async () => {
+    const fx = copyFixture("asset-link");
+    try {
+      mkdirSync(join(fx.dir, "public", "templates"), { recursive: true });
+      writeFileSync(join(fx.dir, "public", "templates", "contract.docx"), "fixture asset");
+      const page = join(fx.dir, "app", "page.tsx");
+      writeFileSync(page, readFileSync(page, "utf8").replace("<Link href=\"/nowhere\">Broken</Link>", '<Link href="/templates/contract.docx">Download contract</Link>'));
+      const graph = await ingest(fx.dir);
+      expect(graph.counters["app/page.tsx"]?.["asset-link"]).toBe(1);
+      expect(lintFlow({ graph }).findings.some((finding) => finding.rule === "broken-link" && finding.evidence?.includes("app/page.tsx"))).toBe(false);
+    } finally { fx.cleanup(); }
   });
 });

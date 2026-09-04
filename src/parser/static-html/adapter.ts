@@ -56,6 +56,7 @@ export const staticHtmlAdapter: IngestorAdapter<StaticHtmlDetection> = {
       const shell = item.link.shell && shellKeys.has(item.key);
       const edge = edgeForHtmlLink(
         item,
+        rootDir,
         resolver,
         stateScreens,
         counters,

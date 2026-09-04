@@ -5,6 +5,7 @@ import { resolveHrefExpression, type ResolvedHref } from "./resolve-href-express
 import type { RouteRegistry } from "./route-registry.js";
 import type { ScreenIndex } from "./screen-index.js";
 import { makeLocalOverlayScreen, makeStateScreen, splitStateQuery, stateScreenId } from "./state-screens.js";
+import { isLocalAssetHref } from "../asset-link.js";
 
 export interface EdgeBuildContext {
   rootDir: string;
@@ -95,6 +96,7 @@ function targetFor(c: ResolvedHref, sourceId: string, screen: ScreenNode, ctx: E
   const href = c.value;
   if (href === "" || href.startsWith("#")) { bump(ctx.counters, call.file, "anchor-hash"); return null; }
   if (EXTERNAL.test(href)) return { id: `external:${href}`, resolved: false, confidence: c.confidence };
+  if (isLocalAssetHref(ctx.rootDir, href, call.file)) { bump(ctx.counters, call.file, "asset-link"); return null; }
   if (href.startsWith("${_}") && screen.dynamic && call.kind === "link") {
     const sameRouteHref = screen.id + href.slice("${_}".length);
     const { stateKey, stateValue } = splitStateQuery(sameRouteHref, ctx.stateKeysByRoute.get(screen.id) ?? new Set());

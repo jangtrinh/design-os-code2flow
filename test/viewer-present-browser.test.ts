@@ -11,7 +11,7 @@ import { copyFixture } from "./helpers/fixture-copy.js";
 const fx = copyFixture("viewer"); const FIXTURE = fx.dir; const DATA = join(FIXTURE, ".code2flow");
 const JPEG = Buffer.from("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==", "base64");
 /** v2 manifest: main path with `via`, one branch, an exit, and a screen the code lacks (UC-04/UC-07). */
-const MANIFEST = { version: 2, features: [{ id: "shop", title: "Shop", match: ["/", "/pricing", "/orders/**", "/docs/**"] }, { id: "account", title: "Product catalog administration", match: [] }], stories: [
+const MANIFEST = { version: 2, features: [{ id: "shop", title: "Shop", match: ["/", "/orders/**", "/docs/**"] }, { id: "account", title: "Product catalog administration", match: ["/pricing"] }], stories: [
   { id: "buy", title: "Buy a plan", entry: "/", exit: ["/orders?drawer=details"], screens: ["/", "/pricing", "/orders?drawer=details", "/checkout-ghost", "/docs/[...parts]"],
     steps: ["/", { screen: "/pricing", via: "Pricing" }, { screen: "/orders?drawer=details", via: "Checkout" }, "/checkout-ghost"],
     branches: [{ title: "Read the docs first", from: "/pricing", steps: [{ screen: "/docs/[...parts]", via: "Checkout" }, "/orders?drawer=details"] }] },
@@ -43,6 +43,27 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     await open("#map");
     expect(await text("#rail")).toContain("Shop");
     expect(await page.evaluate<boolean>(`document.fonts.check('600 15px "Be Vietnam Pro"') && document.fonts.check('12px "JetBrains Mono"')`)).toBe(true);
+  });
+  it("labels portal stubs with the feature and real target title, then opens them by pointer click", async () => {
+    await open("#f/shop");
+    expect(await page.evaluate<string[]>(`[...document.querySelectorAll('.stub[data-node="portal:/pricing"] text')].map((node) => node.textContent ?? '')`)).toEqual(["→ Product catalog administration", "Pricing plans"]);
+    expect(await page.evaluate<string>(`document.querySelector('.stub[data-node="portal:/pricing"]')?.getAttribute('title') ?? ''`)).toBe("Open in Product catalog administration");
+    await (page as unknown as { click(selector: string): Promise<void> }).click('.stub[data-node="portal:/pricing"]');
+    await page.waitForTimeout(200);
+    expect(await page.evaluate<string>("location.hash")).toContain("#f/account/sel/%2Fpricing");
+  });
+  it("anchors every product-map label at its curve midpoint and keeps curves outside card bodies", async () => {
+    await open("#map");
+    expect(await page.evaluate<string[]>(`(() => {
+      const point = (path, t) => { const p = path.getPointAtLength(path.getTotalLength() * t); const m = path.getScreenCTM(); return new DOMPoint(p.x, p.y).matrixTransform(m); };
+      const cards = [...document.querySelectorAll('.card .bg')].map((node) => node.getBoundingClientRect());
+      return [...document.querySelectorAll('.xedge')].flatMap((path) => {
+        const label = document.querySelector('.map-edge-label[data-edge="' + path.dataset.edge + '"]'); const box = label?.getBoundingClientRect(); const mid = point(path, .5);
+        const labelError = !box || Math.hypot(box.x + box.width / 2 - mid.x, box.y + box.height / 2 - mid.y) > 14 ? ['label:' + path.dataset.edge] : [];
+        const crossings = Array.from({ length: 39 }, (_, i) => point(path, (i + 1) / 40)).filter((p) => cards.some((card) => p.x > card.left && p.x < card.right && p.y > card.top && p.y < card.bottom)).map(() => 'card:' + path.dataset.edge);
+        return [...labelError, ...crossings];
+      });
+    })()`)).toEqual([]);
   });
   it("feature breadcrumb dropdown exposes the manifest choices and changes the hash", async () => {
     await open("#f/shop");
@@ -189,7 +210,7 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
   });
   it("keeps route slugs out of canvas text and frame chrome outside screenshot bounds", async () => {
     await open("#f/shop/s/buy/present/1");
-    expect(await page.evaluate<string[]>(`[...document.querySelectorAll('#svg text')].map((node) => node.textContent?.trim() ?? '').filter((value) => value.startsWith('/'))`)).toEqual([]);
+    expect(await page.evaluate<string[]>(`[...document.querySelectorAll('#svg text')].filter((node) => !node.closest('.stub')).map((node) => node.textContent?.trim() ?? '').filter((value) => value.startsWith('/'))`)).toEqual([]);
     expect(await page.evaluate<string[]>(`(() => {
       const intersects = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
       return [...document.querySelectorAll('#view .frame')].flatMap((frame) => {

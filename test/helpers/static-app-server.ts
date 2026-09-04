@@ -1,4 +1,6 @@
 import { createServer, type Server } from "node:http";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 /** Serves tiny pages that behave like an app-shell Next app: inner scroller, a dialog on ?drawer=, links to dynamic routes. */
 export function startStaticApp(): Promise<{ server: Server; url: string }> {
@@ -12,6 +14,20 @@ export function startStaticApp(): Promise<{ server: Server; url: string }> {
     if (u.pathname.startsWith("/blog/")) return res.end(page("Post " + u.pathname.split("/")[2], "<p>post body</p>"));
     if (u.pathname === "/pricing") return res.end(page("Pricing plans", `<p>plans</p><div id="late"></div><script>setTimeout(() => { document.getElementById("late").innerHTML = '<div style="height:900px">late block</div><p id="late-end">late end</p>'; }, 900);</script>`));
     res.statusCode = 404; res.end(page("Not found", ""));
+  });
+  return new Promise((ok) => server.listen(0, "127.0.0.1", () => ok({ server, url: `http://127.0.0.1:${(server.address() as { port: number }).port}` })));
+}
+
+/** Serves the scripted-login fixture with a real browser-side localStorage session. */
+export function startLoginApp(): Promise<{ server: Server; url: string }> {
+  const fixture = new URL("../../fixtures/synthetic/login-app/", import.meta.url);
+  const page = (name: string): string => readFileSync(fileURLToPath(new URL(name, fixture)), "utf8");
+  const server = createServer((req, res) => {
+    const pathname = new URL(req.url ?? "/", "http://x").pathname;
+    res.setHeader("content-type", "text/html");
+    if (pathname === "/login.html") return res.end(page("login.html"));
+    if (pathname === "/dashboard.html") return res.end(page("dashboard.html"));
+    res.statusCode = 404; res.end("not found");
   });
   return new Promise((ok) => server.listen(0, "127.0.0.1", () => ok({ server, url: `http://127.0.0.1:${(server.address() as { port: number }).port}` })));
 }

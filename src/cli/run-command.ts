@@ -5,6 +5,7 @@ import { exportCommand } from "./export-command.js";
 import { lintCommandResult } from "./lint-command.js";
 import { scanCommand } from "./scan-command.js";
 import { snapshotCommand } from "./snapshot-command.js";
+import { ensureLoginForRun } from "./login-command.js";
 import { validateStoriesFromDisk } from "./stories-command.js";
 import { loadConfig } from "../schema/code2flow-config.js";
 import { loadManifest, MANIFEST_FILE } from "../schema/story-manifest.js";
@@ -12,6 +13,11 @@ import type { CanonicalFlowGraph } from "../schema/index.js";
 
 const quiet = (): void => {};
 export class RunAbort extends Error {}
+
+export function formatRunSummary(summary: { screens: number; edges: number; captured: number; failed: number; lintErrors: number; loginGated: number; repo: string; serverUrl: string }): string {
+  const line = `run  ${summary.screens} screens, ${summary.edges} edges, ${summary.captured} captured, ${summary.failed} failed, ${summary.lintErrors} lint error(s)`;
+  return summary.loginGated > 0 ? `${line}\n${summary.loginGated} screens hit the sign-in page → run: code2flow login ${summary.repo} --url ${summary.serverUrl}` : line;
+}
 
 /** `run` composes existing CLI seams; it does not reproduce scanner, capture, lint, story, or export logic. */
 export async function runCommand(repoArg: string, viewerDir: string, flags: Record<string, string | true>, log: (line: string) => void = console.log): Promise<number> {
@@ -32,6 +38,7 @@ export async function runCommand(repoArg: string, viewerDir: string, flags: Reco
     } else if (!(await serverAnswers(serverUrl))) throw new RunAbort(`nothing answers at ${serverUrl}; start the app's dev server or drop --url to let run start it`);
     const scan = await scanCommand(rootDir, quiet);
     try { loadManifest(rootDir); } catch (error) { throw new RunAbort((error as Error).message); }
+    const loginLine = await ensureLoginForRun(rootDir, serverUrl, config.login, flags.relogin === true); if (loginLine) log(loginLine);
     const snapshot = await snapshotCommand(rootDir, { ...flags, url: serverUrl }, quiet);
     let validate: { errors: number; warnings: number } | null = null;
     if (existsSync(join(rootDir, MANIFEST_FILE))) {
@@ -42,9 +49,10 @@ export async function runCommand(repoArg: string, viewerDir: string, flags: Reco
     const graph = JSON.parse(readFileSync(join(rootDir, ".code2flow", "graph.json"), "utf8")) as CanonicalFlowGraph;
     const tiers = { high: 0, medium: 0, low: 0 }; for (const edge of graph.edges) tiers[edge.confidence]++;
     const failed = graph.counters.snapshot?.["capture-failed"] ?? 0;
-    const summary = { at: new Date().toISOString(), serverUrl, startedServer: !!started, screens: scan.screens, edges: scan.edges, tiers, captured: snapshot.captured, failed, validate, lint: lintResult.totals, exports };
+    const loginGated = Object.values(graph.counters).reduce((total, counters) => total + (counters["login-redirect"] ?? 0), 0);
+    const summary = { at: new Date().toISOString(), serverUrl, startedServer: !!started, screens: scan.screens, edges: scan.edges, tiers, captured: snapshot.captured, failed, loginGated, validate, lint: lintResult.totals, exports };
     const outDir = join(rootDir, ".code2flow"); mkdirSync(outDir, { recursive: true }); writeFileSync(join(outDir, "run-summary.json"), JSON.stringify(summary, null, 2) + "\n");
-    log(`run  ${summary.screens} screens, ${summary.edges} edges, ${summary.captured} captured, ${summary.failed} failed, ${summary.lint.error} lint error(s)`);
+    log(formatRunSummary({ screens: summary.screens, edges: summary.edges, captured: summary.captured, failed: summary.failed, lintErrors: summary.lint.error, loginGated, repo: rootDir, serverUrl }));
     return lintExit;
   } finally {
     if (signalHandler) { process.removeListener("SIGINT", signalHandler); process.removeListener("SIGTERM", signalHandler); }

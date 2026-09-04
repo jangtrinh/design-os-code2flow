@@ -4,6 +4,7 @@ import { request } from "node:http";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { main } from "../src/cli/index.js";
+import { formatRunSummary } from "../src/cli/run-command.js";
 import { copyFixture } from "./helpers/fixture-copy.js";
 import { startStaticApp } from "./helpers/static-app-server.js";
 
@@ -21,6 +22,10 @@ function answers(url: string): Promise<boolean> {
 describe("run, init, and paths (seams: target repo artifacts and CLI exit codes)", () => {
   const runFx = copyFixture("run-url"); const devFx = copyFixture("run-dev"); const initFx = copyFixture("init");
   afterAll(() => { runFx.cleanup(); devFx.cleanup(); initFx.cleanup(); });
+
+  it("adds the exact login instruction to the run summary without changing lint exit semantics", () => {
+    expect(formatRunSummary({ screens: 31, edges: 86, captured: 28, failed: 0, lintErrors: 3, loginGated: 22, repo: "/tmp/sodeal", serverUrl: "http://127.0.0.1:4319" })).toBe("run  31 screens, 86 edges, 28 captured, 0 failed, 3 lint error(s)\n22 screens hit the sign-in page → run: code2flow login /tmp/sodeal --url http://127.0.0.1:4319");
+  });
 
   it("run --url writes the map, shots, export, and a summary while preserving lint exit semantics", async () => {
     const app = await startStaticApp();

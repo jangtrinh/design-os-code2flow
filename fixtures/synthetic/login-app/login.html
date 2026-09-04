@@ -1,0 +1,14 @@
+<!doctype html>
+<title>Login</title>
+<form id="login">
+  <label>Email <input type="email" name="email"></label>
+  <label>Password <input type="password" name="password"></label>
+  <button type="submit">Sign in</button>
+</form>
+<script>
+  document.querySelector('#login').addEventListener('submit', (event) => {
+    event.preventDefault();
+    localStorage.setItem('session', 'signed-in');
+    location.assign('/dashboard.html');
+  });
+</script>

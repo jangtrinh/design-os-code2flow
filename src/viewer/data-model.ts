@@ -40,9 +40,13 @@ export function defaultFeatures(routeIds: string[]): Feature[] {
   const segs = [...new Set(routeIds.map((r) => r.split("/")[1]).filter(Boolean))].sort();
   const access = routeIds.filter((r) => /sign-?in|log-?in|welcome|launchpad|403|404|onboard/i.test(r));
   const account = routeIds.filter((r) => r === "/" || /^\/(settings|notifications|profile|account)(\/|$)/.test(r));
+  const specialised = new Set([...access, ...account]);
   const out: Feature[] = [];
   if (access.length) out.push({ id: "access", title: "Access", match: access, order: 0 });
-  segs.forEach((s, i) => { if (!/^(settings|notifications|profile|account)$/.test(s)) out.push({ id: s, title: humanize("/" + s), match: [`/${s}/**`], order: i + 1 }); });
+  segs.forEach((s, i) => {
+    const segmentRoutes = routeIds.filter((route) => route.split("/")[1] === s);
+    if (!/^(settings|notifications|profile|account)$/.test(s) && !segmentRoutes.every((route) => specialised.has(route))) out.push({ id: s, title: humanize("/" + s), match: [`/${s}/**`], order: i + 1 });
+  });
   if (account.length) out.push({ id: "account", title: "Account & shell", match: [...new Set(account)], order: 99 });
   return out;
 }

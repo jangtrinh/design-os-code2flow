@@ -22,7 +22,21 @@ export interface CaptureConfig {
   quality: number;
 }
 
+/** Scripted sign-in: only the NAMES of the env vars holding the credentials live here; values are read at run time. */
+export interface LoginConfig {
+  /** login page path, default /login */
+  path?: string;
+  emailEnv: string;
+  passwordEnv: string;
+  /** path the app lands on after a successful sign-in; default = any path other than `path` */
+  successUrl?: string;
+  /** CSS selectors when auto-detection (input[type=email], input[type=password], submit button) is not enough */
+  selectors?: { email?: string; password?: string; submit?: string };
+}
+
 export interface Code2FlowConfig {
+  /** scripted login for apps behind auth (see LoginConfig) */
+  login?: LoginConfig;
   features?: FeatureConfig[];
   /** concrete sample URLs for dynamic routes the parser cannot resolve: { "/users/[id]": ["/users/alice"] } */
   routeExamples?: Record<string, string[]>;

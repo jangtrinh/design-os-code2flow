@@ -2,6 +2,7 @@ import { posix } from "node:path";
 import type { Counters, ScreenNode } from "../../schema/index.js";
 import type { RouteResolver } from "../adapter-types.js";
 import type { HtmlFile } from "./screen-edges.js";
+import { isLocalAssetHref } from "../asset-link.js";
 
 const externalHref = /^(https?:)?\/\/|^(mailto|tel):/;
 
@@ -9,6 +10,7 @@ const externalHref = /^(https?:)?\/\/|^(mailto|tel):/;
 export function targetForHtmlHref(
   file: HtmlFile,
   href: string,
+  rootDir: string,
   resolver: RouteResolver,
   stateScreens: Map<string, ScreenNode>,
   counters: Counters,
@@ -26,6 +28,10 @@ export function targetForHtmlHref(
       href.startsWith("mailto:") ? "mailto-link" : "external-link",
     );
     return `external:${href}`;
+  }
+  if (isLocalAssetHref(rootDir, href, file.file)) {
+    incrementCounter(counters, file.file, "asset-link");
+    return null;
   }
   const path = resolveHtmlHref(file.route, href);
   const route = resolver.resolve(path);

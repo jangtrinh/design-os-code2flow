@@ -20,7 +20,14 @@ export function renderMap(view: SVGGElement, onOpen: (featureId: string) => void
   const pos: Record<string, { x: number; y: number }> = {}; ordered.forEach((f, i) => { pos[f.id] = { x: 60 + (i % 3) * (CW + GAP), y: 80 + Math.floor(i / 3) * (CH + GAP + 60) }; });
   const xf = new Map<string, number>();
   for (const e of D.graph.edges) { if (e.scope !== "screen") continue; const a = routeOf(e.source), b = routeOf(e.target); if (!a || !b) continue; const fa = featureOf(a), fb = featureOf(b); if (fa !== fb) xf.set(fa + ">" + fb, (xf.get(fa + ">" + fb) ?? 0) + 1); }
-  for (const [k, n] of xf) { const [a, b] = k.split(">"); const pa = pos[a], pb = pos[b]; if (!pa || !pb) continue; const x1 = pa.x + CW / 2, y1 = pa.y, x2 = pb.x + CW / 2, y2 = pb.y; const lift = Math.abs(x2 - x1) / 3 + 40; g.append(el("path", { d: `M${x1},${y1} C${x1},${y1 - lift} ${x2},${y2 - lift} ${x2},${y2}`, class: "xedge", "marker-end": "url(#arrow)" })); const mx = (x1 + x2) / 2, my = Math.min(y1, y2) - lift * 0.75; g.append(el("rect", { x: mx - 14, y: my - 9, width: 28, height: 18, class: "pill-bg" }), el("text", { x: mx, y: my + 4, "text-anchor": "middle", class: "pill" }, String(n))); }
+  for (const [k, n] of xf) {
+    const [a, b] = k.split(">"); const pa = pos[a], pb = pos[b]; if (!pa || !pb) continue;
+    const x1 = pa.x + CW / 2, y1 = pa.y, x2 = pb.x + CW / 2, y2 = pb.y;
+    const lift = Math.max(80, Math.abs(x2 - x1) / 3 + 40); const c1 = { x: x1, y: y1 - lift }, c2 = { x: x2, y: y2 - lift };
+    g.append(el("path", { d: `M${x1},${y1} C${c1.x},${c1.y} ${c2.x},${c2.y} ${x2},${y2}`, class: "xedge", "data-edge": k, "marker-end": "url(#arrow)" }));
+    const mid = cubicPoint({ x: x1, y: y1 }, c1, c2, { x: x2, y: y2 }, 0.5); const label = uiScale("ui-scale center map-edge-label", mid.x, mid.y); label.dataset.edge = k;
+    label.append(el("rect", { x: -14, y: -9, width: 28, height: 18, class: "pill-bg" }), el("text", { x: 0, y: 4, "text-anchor": "middle", class: "pill" }, String(n))); g.append(label);
+  }
   for (const f of ordered) {
     const p = pos[f.id]; const s = featureStats(f); const c = el("g", { class: "card", transform: `translate(${p.x},${p.y})` });
     c.append(el("rect", { class: "bg", width: CW, height: CH, rx: 16 }));
@@ -30,4 +37,9 @@ export function renderMap(view: SVGGElement, onOpen: (featureId: string) => void
     c.addEventListener("click", () => onOpen(f.id)); g.append(c);
   }
   view.append(g);
+}
+
+function cubicPoint(a: { x: number; y: number }, b: { x: number; y: number }, c: { x: number; y: number }, d: { x: number; y: number }, t: number): { x: number; y: number } {
+  const u = 1 - t;
+  return { x: u ** 3 * a.x + 3 * u ** 2 * t * b.x + 3 * u * t ** 2 * c.x + t ** 3 * d.x, y: u ** 3 * a.y + 3 * u ** 2 * t * b.y + 3 * u * t ** 2 * c.y + t ** 3 * d.y };
 }

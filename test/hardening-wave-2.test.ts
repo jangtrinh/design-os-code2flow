@@ -8,7 +8,7 @@ import { featureIdFor, globMatch, type CanonicalFlowGraph } from "../src/schema/
 import { loadManifest } from "../src/schema/story-manifest.js";
 import { resolveStorageState } from "../src/snapshot/snapshot-runner.js";
 import { shotFiles } from "../src/snapshot/shot-file-key.js";
-import { D, featureOf, initData } from "../src/viewer/data-model.js";
+import { D, defaultFeatures, featureOf, initData } from "../src/viewer/data-model.js";
 import type { ViewerData } from "../src/viewer/types.js";
 import { copyFixture } from "./helpers/fixture-copy.js";
 import { startStaticApp } from "./helpers/static-app-server.js";
@@ -41,6 +41,16 @@ describe("data-model featureOf: never returns an id absent from D.features", () 
     initData(viewerData({ graph, features }));
     expect(featureOf("/only/x")).toBe("only");
     expect(featureOf("/other/y")).toBe("only"); // segment "other" is not a registered feature id: safety-net fallback, never a dangling id
+  });
+});
+
+describe("data-model default features: one non-empty feature per Route Screen", () => {
+  it("keeps login Route Screens in Access without creating an empty Login feature", () => {
+    const graph = graphWith([{ id: "/login", kind: "route" }, { id: "/catalog", kind: "route" }]);
+    const features = defaultFeatures(graph.screens.map((screen) => screen.id));
+    initData(viewerData({ graph, features }));
+    expect(features.map((feature) => feature.id)).toEqual(["access", "catalog"]);
+    expect(graph.screens.map((screen) => featureOf(screen.id))).toEqual(["access", "catalog"]);
   });
 });
 

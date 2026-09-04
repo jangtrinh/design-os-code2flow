@@ -54,8 +54,15 @@ export function stubNode(stub: Stub, x: number, y: number, onPortal: (feature: s
   const w = stub.kind === "portal" ? 260 : stub.caption ? 300 : 200, h = 44;
   const g = el("g", { class: "stub " + (stub.kind === "missing" ? "bad" : ""), transform: `translate(${x},${y})`, "data-node": stub.id });
   g.append(el("rect", { class: "bg", width: w, height: h, rx: 8 }));
-  const label = stub.caption ?? (stub.kind === "portal" ? `→ ${featById[stub.feature ?? ""]?.title ?? stub.feature}` : stub.kind === "missing" ? "MISSING ROUTE" : "SINK");
-  g.append(el("text", { x: 10, y: 18, style: "fill:var(--text2)" }, label)); g.append(el("text", { x: 10, y: 34, class: "path", style: "fill:var(--text)" }, "Route unavailable"));
+  const portalTitle = featById[stub.feature ?? ""]?.title ?? stub.feature ?? "feature";
+  const targetTitle = byId.has(stub.label) ? realTitle(stub.label) : stub.label;
+  const [label, detail] = stub.kind === "portal"
+    ? [`→ ${portalTitle}`, targetTitle]
+    : stub.kind === "missing"
+      ? ["Missing route", stub.label]
+      : [stub.caption ?? "SINK", "Route unavailable"];
+  if (stub.kind === "portal") g.setAttribute("title", `Open in ${portalTitle}`);
+  g.append(el("text", { x: 10, y: 18, style: "fill:var(--text2)" }, label)); g.append(el("text", { x: 10, y: 34, class: "path", style: "fill:var(--text)" }, detail));
   if (stub.kind === "portal") g.addEventListener("click", (ev) => { ev.stopPropagation(); onPortal(stub.feature ?? "", stub.label); });
   return g;
 }

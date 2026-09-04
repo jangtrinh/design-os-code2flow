@@ -93,4 +93,4 @@ npm i && npm run build      # dist/cli + out/viewer (fonts inlined)
 npx code2flow scan /path/to/repo
 ```
 
-Nothing vanishes silently: everything the parser saw but did not turn into a screen or edge is a counter in `graph.json`, and every skipped capture is a lint finding.
+Nothing vanishes silently: everything the parser saw but did not turn into a screen or edge is a counter in `graph.json`, including existing local download links (`asset-link`), and every skipped capture is a lint finding.

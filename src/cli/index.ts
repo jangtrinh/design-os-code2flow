@@ -7,7 +7,7 @@ import { exportCommand } from "./export-command.js";
 import { renderCommand } from "./render-command.js";
 import { RenderUsageError } from "../snapshot/render-views.js";
 import { lintCommand } from "./lint-command.js";
-import { loginCommand } from "./login-command.js";
+import { loginCommand, LoginError } from "./login-command.js";
 import { initCommand } from "./init-command.js";
 import { pathsCommand } from "./paths-command.js";
 import { RunAbort, runCommand } from "./run-command.js";
@@ -24,7 +24,7 @@ const USAGE = `code2flow — living user-flow canvas from a web codebase (100% l
   code2flow paths <repo> --from A --to B [--max 1..8] [--shell] [--json]    shortest source-evidenced Screen Node paths
   code2flow paths <repo> --orphans|--dead-ends                             topology findings
   code2flow snapshot <repo> --url <devServer>    capture every screen (content-fit, real titles)
-  code2flow login <repo> --url <devServer>       sign in by hand once; the session is reused by snapshot
+  code2flow login <repo> --url <devServer>       sign in once (scripted via the config login block or --email-env/--password-env; --manual for a window); reused by snapshot and run
   code2flow serve <repo>                         open the canvas on http://127.0.0.1:4317
   code2flow export <repo> [--feature id]         self-contained HTML (whole app, or one per feature)
   code2flow render <repo> [--png] [--pdf] [--feature id] [--story id] [--out dir] [--scale 2]  PNG/PDF hand-outs
@@ -35,8 +35,8 @@ const USAGE = `code2flow — living user-flow canvas from a web codebase (100% l
 `;
 
 /** Flags that take a value: `--flag --other` or a trailing `--flag` is a usage error, not silently `true`. */
-const VALUE_FLAGS = new Set(["url", "storage-state", "concurrency", "feature", "story", "out", "scale", "from", "to", "max", "dev", "fail-on"]);
-const BOOLEAN_FLAGS = new Set(["orphans", "dead-ends", "shell", "json", "headed", "exit-code", "no-skills", "png", "pdf"]);
+const VALUE_FLAGS = new Set(["url", "storage-state", "concurrency", "feature", "story", "out", "scale", "from", "to", "max", "dev", "fail-on", "email-env", "password-env", "path", "success-url"]);
+const BOOLEAN_FLAGS = new Set(["orphans", "dead-ends", "shell", "json", "headed", "exit-code", "no-skills", "png", "pdf", "manual", "relogin"]);
 
 /** Tiny argv parser: positionals + --flag value / --flag. No dependency needed for nine commands. */
 export function parseArgs(argv: string[]): { command: string; positionals: string[]; flags: Record<string, string | true>; errors: string[] } {
@@ -80,7 +80,7 @@ export async function main(argv: string[]): Promise<number> {
     }
   } catch (err) {
     console.error(`${command}: ${(err as Error).message}`);
-    return err instanceof RunAbort || err instanceof RenderUsageError ? 2 : 1;
+    return err instanceof RunAbort || err instanceof RenderUsageError || err instanceof LoginError ? 2 : 1;
   }
 }
 

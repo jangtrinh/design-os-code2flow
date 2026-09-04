@@ -185,15 +185,23 @@ What you see: `export` writes a self-contained HTML file that opens offline. `re
 
 If it fails: run `code2flow run /path/to/your-app` first. Use `--feature`, `--story`, `--out`, or `--scale` to narrow a render. When a whole-app export would exceed 14 MB, Code2Flow splits screenshots into one HTML file per feature; each file still carries the full graph.
 
-## 8. Sign in once for an app behind authentication
+## 8. Sign in for an app behind authentication
 
-```bash
-code2flow login /path/to/your-app --url http://127.0.0.1:3000
+Put the test account in environment variables (never in the repo) and tell Code2Flow their names in `code2flow.config.json`:
+
+```json
+{ "login": { "path": "/login", "emailEnv": "MYAPP_EMAIL", "passwordEnv": "MYAPP_PASSWORD", "successUrl": "/dashboard" } }
 ```
 
-What you see: a Chrome window. Sign in yourself; Code2Flow saves the local browser session to `.code2flow/storage-state.json` and later captures reuse it.
+```bash
+export MYAPP_EMAIL="…" MYAPP_PASSWORD="…"
+code2flow run /path/to/your-app          # signs in headless before capturing; summary shows `login: ok`
+code2flow login /path/to/your-app --url http://127.0.0.1:3000   # the same sign-in on its own
+```
 
-If it fails: first start the app at the URL you supplied. Treat captures and offline exports as sensitive if the signed-in session shows real account data.
+What you see: `login: ok` in the run summary and `.code2flow/storage-state.json` saved; later runs reuse it (`--relogin` forces a new sign-in). Code2Flow finds the email field, the password field and the submit button itself; set `login.selectors` when the form is unusual. Values are read from the environment at run time and are never written to the config, the graph, the export or the logs.
+
+If it fails: the one-line message names the missing variable (`login: missing MYAPP_EMAIL`) or the selector that did not match. Without credentials the run continues and reports `login: skipped (no MYAPP_EMAIL)`; captures of protected pages then show the sign-in page. For Google/SSO-only apps use `code2flow login … --manual`: a Chrome window opens, sign in by hand, press Enter, and the session is saved the same way.
 
 ## 9. Work with Claude Code or Codex
 

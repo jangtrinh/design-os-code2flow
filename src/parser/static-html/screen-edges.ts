@@ -91,6 +91,7 @@ export function collectHtmlLinks(
 /** Resolves a collected literal link, retaining non-emitted hash links as counters. */
 export function edgeForHtmlLink(
   item: CollectedLink,
+  rootDir: string,
   resolver: RouteResolver,
   stateScreens: Map<string, ScreenNode>,
   counters: Counters,
@@ -100,6 +101,7 @@ export function edgeForHtmlLink(
   const target = targetForHtmlHref(
     item.file,
     item.link.href,
+    rootDir,
     resolver,
     stateScreens,
     counters,

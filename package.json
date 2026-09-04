@@ -1,6 +1,6 @@
 {
   "name": "design-os-code2flow",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Local CLI that turns a Next.js codebase into a living user-flow canvas: real screenshots per screen, code-evidenced transitions, PRD stories, lint and diff.",
   "type": "module",
   "engines": {

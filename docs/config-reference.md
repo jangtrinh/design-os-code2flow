@@ -60,3 +60,17 @@ Feature ids (in either file) must match `^[a-z0-9][a-z0-9._-]*$` — they end up
 
 - Route Screen: the route path as in the App Router tree: `/users`, `/users/[id]`, `/docs/[...parts]`.
 - State Screen: parent route + the query that addresses it: `/users?drawer=edit-roles`, `/checkout?step=review`, `/orders?tab=archived`; overlays toggled by local state use `#`: `/invite#edit-roles-drawer`.
+
+## login
+
+Scripted sign-in for apps behind authentication. Only the NAMES of the environment variables live in the config; values are read from the environment when `login` or `run` executes and are never written anywhere.
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| `path` | `/login` | page with the sign-in form |
+| `emailEnv` | required | env var holding the email / username |
+| `passwordEnv` | required | env var holding the password |
+| `successUrl` | any path other than `path` | where the app lands after a successful sign-in |
+| `selectors.email` / `.password` / `.submit` | auto-detected (`input[type=email]`, `input[type=password]`, the submit button) | CSS selectors for unusual forms |
+
+`run` signs in before capturing when `login` is set and `.code2flow/storage-state.json` is missing (`--relogin` forces it); the summary line reports `login: ok`, `login: skipped (no <ENV>)` or `login: failed (<reason>)`. `code2flow login <repo> --url <server>` runs the same flow alone; `--email-env`, `--password-env`, `--path`, `--success-url` override the config and `--manual` opens a window to sign in by hand.
