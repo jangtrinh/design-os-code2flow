@@ -8,6 +8,7 @@ import { renderInspect } from "./views-inspect.js";
 import { renderMap } from "./views-map.js";
 import { presenterHud, renderLanes } from "./views-present.js";
 import { renderStoryPlayer } from "./story-player.js";
+import { iconHtml } from "./icons.js";
 
 /** Loads `.code2flow/*` from the serving CLI (or an inlined payload in exports) and boots the canvas. */
 export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
@@ -57,6 +58,9 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
     gotoScreen: (s) => { state.level = "feature"; state.feature = featureOf(s.id); state.story = null; state.mode = "inspect"; state.step = 0; state.selected = s; go(); showDrawer(s, select, openLightbox); canvas.focusOn(routeOf(s.id) ?? s.id); },
   };
   const palette = setupPalette(nav);
+  const help = document.getElementById("canvas-help")!; const helpPopover = document.getElementById("canvas-help-popover")!;
+  help.innerHTML = iconHtml("question");
+  help.addEventListener("click", () => { const open = helpPopover.hidden; helpPopover.hidden = !open; help.setAttribute("aria-expanded", String(open)); if (open) helpPopover.innerHTML = `<div class="help-row"><span class="help-line high"></span>Solid arrow: high confidence</div><div class="help-row"><span class="help-line medium"></span>Grey arrow: medium confidence</div><div class="help-row"><span class="help-line low"></span>Dashed arrow: review needed</div><div class="help-row">${iconHtml("link-break")}Broken link or MISSING SCREEN</div><div class="help-row">${iconHtml("sidebar-simple")}Chip: in sidebar</div><div class="help-row">${iconHtml("arrow-u-up-left")}Chip: closes</div><div class="help-row">${iconHtml("keyboard")}Keys: arrows, P, F, Esc</div>`; });
   document.querySelectorAll<HTMLButtonElement>("#modeSeg button").forEach((b) => b.addEventListener("click", () => { state.mode = b.dataset.mode as "inspect" | "present" | "play"; state.selected = null; if (state.level === "map") { state.level = "feature"; state.feature = state.feature ?? [...D.features].sort((a, c) => a.order - c.order)[0]?.id ?? null; } go(); }));
   document.getElementById("nav-back")!.addEventListener("click", () => history.back());
   document.getElementById("lightbox")!.addEventListener("click", (ev) => { if (!(ev.target as Element).closest(".scroller")) document.getElementById("lightbox")!.hidden = true; });

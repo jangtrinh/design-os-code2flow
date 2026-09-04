@@ -2,8 +2,9 @@ import type { ScreenNode } from "../schema/index.js";
 import { byId, D, escapeHtml as esc, featById, featureOf, humanize, realTitle, routeOf, routes, routeTitle, state, storyFeature } from "./data-model.js";
 import { featureStats } from "./views-map.js";
 import { createDropdown } from "./dropdown.js";
+import { iconHtml } from "./icons.js";
 
-const ICON_L = '<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>';
+const icon = (name: Parameters<typeof iconHtml>[0], size = 16): string => iconHtml(name, size);
 
 export interface NavHandlers { openFeature: (id: string, story: string | null) => void; setStory: (id: string | null) => void; toMap: () => void; toggleDismiss: (v: boolean) => void; gotoScreen: (s: ScreenNode) => void }
 
@@ -11,17 +12,17 @@ export interface NavHandlers { openFeature: (id: string, story: string | null) =
 export function renderRail(h: NavHandlers): void {
   const r = document.getElementById("rail")!; r.replaceChildren();
   const title = (t: string): HTMLElement => { const d = document.createElement("div"); d.className = "legend-title"; d.textContent = t; return d; };
-  r.append(title(D.productName));
+  const product = title(D.productName); product.innerHTML = `${icon("map-trifold")}<span>${esc(D.productName)}</span>`; r.append(product);
   for (const f of [...D.features].sort((a, b) => a.order - b.order)) {
     const s = featureStats(f); const d = document.createElement("button"); d.className = "rail-item" + (state.feature === f.id && state.level === "feature" ? " on" : "");
-    d.innerHTML = `<span>${esc(f.title)}</span><span class="counter">${s.routes}·${s.stories}</span>`; d.addEventListener("click", () => h.openFeature(f.id, null)); r.append(d);
+    d.innerHTML = `${icon("squares-four", 20)}<span>${esc(f.title)}</span><span class="counter">${s.routes}·${s.stories}</span>`; d.addEventListener("click", () => h.openFeature(f.id, null)); r.append(d);
     if (state.feature === f.id && state.level === "feature") {
-      for (const st of D.stories.filter((x) => storyFeature(x) === f.id)) { const e = document.createElement("button"); e.className = "rail-item nav-story" + (state.story === st.id ? " on" : ""); e.innerHTML = `<span>${esc(st.title)}</span><span class="counter">${st.screens.length}</span>`; e.addEventListener("click", () => h.setStory(st.id)); r.append(e); }
+      for (const st of D.stories.filter((x) => storyFeature(x) === f.id)) { const e = document.createElement("button"); e.className = "rail-item nav-story" + (state.story === st.id ? " on" : ""); e.innerHTML = `${icon("path", 20)}<span>${esc(st.title)}</span><span class="counter">${st.screens.length}</span>`; e.addEventListener("click", () => h.setStory(st.id)); r.append(e); }
       const n = document.createElement("button"); n.className = "rail-item nav-story"; const cnt = routes.filter((x) => featureOf(x.id) === f.id && !D.stories.some((y) => y.screens.map(routeOf).includes(x.id))).length;
-      n.innerHTML = `<span>Not in a story</span><span class="counter">${cnt}</span>`; n.addEventListener("click", () => { state.mode = "inspect"; h.setStory(null); }); r.append(n);
+      n.innerHTML = `${icon("stack", 20)}<span>Not in a story</span><span class="counter">${cnt}</span>`; n.addEventListener("click", () => { state.mode = "inspect"; h.setStory(null); }); r.append(n);
     }
   }
-  const l = document.createElement("label"); l.className = "option-label"; l.innerHTML = `<input type="checkbox" ${state.showDismiss ? "checked" : ""}> Cancel/Close`; l.querySelector("input")!.addEventListener("change", (ev) => h.toggleDismiss((ev.target as HTMLInputElement).checked)); r.append(l);
+  const l = document.createElement("label"); const disabled = state.level === "map"; l.className = "option-label close-arrows-row" + (disabled ? " disabled" : ""); l.title = disabled ? "Applies to feature and story pages" : "Show arrows for Cancel/Close/Back buttons (hidden by default)"; l.innerHTML = `${icon("arrow-u-up-left", 20)}<span>Close arrows</span><input role="switch" type="checkbox" aria-checked="${state.showDismiss}" ${state.showDismiss ? "checked" : ""} ${disabled ? "disabled" : ""}>`; l.querySelector("input")!.addEventListener("change", (ev) => h.toggleDismiss((ev.target as HTMLInputElement).checked)); r.append(l);
   document.querySelectorAll<HTMLButtonElement>("#modeSeg button").forEach((b) => b.classList.toggle("on", b.dataset.mode === state.mode));
 }
 
@@ -29,7 +30,7 @@ export function renderRail(h: NavHandlers): void {
 export function renderCrumb(h: NavHandlers): void {
   const c = document.getElementById("crumb")!; c.replaceChildren();
   const separator = (): HTMLSpanElement => { const s = document.createElement("span"); s.className = "crumb-separator"; s.setAttribute("aria-hidden", "true"); s.textContent = "/"; return s; };
-  const b = document.createElement("button"); b.textContent = "Product map"; b.addEventListener("click", h.toMap); c.append(b);
+  const b = document.createElement("button"); b.innerHTML = `${icon("map-trifold")}<span>Product map</span>`; b.addEventListener("click", h.toMap); c.append(b);
   if (state.level === "feature") {
     c.append(separator());
     c.append(createDropdown("Feature", [...D.features].sort((a, b) => a.order - b.order).map((f) => ({ id: f.id, label: f.title })), state.feature ?? "", (id) => h.openFeature(id, null)));
@@ -37,10 +38,13 @@ export function renderCrumb(h: NavHandlers): void {
     c.append(createDropdown("Story", [{ id: "", label: "Feature overview" }, ...D.stories.filter((story) => storyFeature(story) === state.feature).map((story) => ({ id: story.id, label: story.title }))], state.story ?? "", (id) => h.setStory(id || null)));
   }
   const hud = document.getElementById("hud")!;
-  const kbd = (k: string): string => `<span class="kbd">${k}</span>`;
+  const kbd = (k: string): string => `<span class="kbd kbd-nav">${icon("keyboard", 14)}${k}</span>`;
   hud.hidden = state.mode === "present" || state.mode === "play";
-  hud.innerHTML = state.level === "feature" ? `<button id="z-out" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="Zoom out">−</button><button id="z-in" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="Zoom in">+</button><button id="fit" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="Fit">⌗</button><span>${kbd("F")}</span><span>${kbd("[")}${kbd("]")}</span>` : `<button id="z-out" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="Zoom out">−</button><button id="z-in" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="Zoom in">+</button><button id="fit" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="Fit">⌗</button><span>${kbd("/")}</span>`;
-  document.getElementById("nav-back")!.innerHTML = ICON_L;
+  const ctl = (id: string, label: string, name: Parameters<typeof iconHtml>[0]): string => `<button id="${id}" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="${label}" title="${label}">${icon(name)}</button>`;
+  hud.innerHTML = state.level === "feature" ? `${ctl("z-out", "Zoom out", "minus")}${ctl("z-in", "Zoom in", "plus")}${ctl("fit", "Fit canvas", "corners-out")}<span>${kbd("F")}</span><span>${kbd("[")}${kbd("]")}</span>` : `${ctl("z-out", "Zoom out", "minus")}${ctl("z-in", "Zoom in", "plus")}${ctl("fit", "Fit canvas", "corners-out")}<span>${kbd("/")}</span>`;
+  document.getElementById("nav-back")!.innerHTML = icon("caret-left");
+  document.getElementById("nav-search")!.innerHTML = `${icon("magnifying-glass")}<span>Search</span>`;
+  document.querySelectorAll<HTMLButtonElement>("#modeSeg button").forEach((button) => { const name = button.dataset.mode === "inspect" ? "eye" : button.dataset.mode === "present" ? "presentation" : "play"; button.innerHTML = `${icon(name)}<span>${button.dataset.mode![0].toUpperCase() + button.dataset.mode!.slice(1)}</span>`; });
 }
 
 /* ---------- deep links: state ⇄ location.hash ---------- */

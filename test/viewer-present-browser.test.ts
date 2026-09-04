@@ -59,6 +59,15 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     await page.evaluate<void>(`document.querySelector('[aria-label="Feature"]').click()`);
     expect(await page.evaluate<boolean>(`(() => { const menu = document.querySelector('.crumb-menu:not([hidden])'); const row = menu.querySelector('.crumb-option'); const style = getComputedStyle(menu); return style.width !== '0px' && style.overflowY === 'auto' && row.scrollWidth === row.clientWidth; })()`)).toBe(true);
   });
+  it("opens canvas vocabulary and toggles Close arrows", async () => {
+    await open("#f/shop");
+    await page.evaluate<void>(`document.querySelector('#canvas-help').click()`);
+    expect(await count('#canvas-help-popover:not([hidden]) .help-row')).toBeGreaterThanOrEqual(5);
+    expect(await page.evaluate<string>(`document.querySelector('.close-arrows-row input').getAttribute('aria-checked')`)).toBe("false");
+    await page.evaluate<void>(`document.querySelector('.close-arrows-row input').click()`);
+    await page.waitForTimeout(100);
+    expect(await page.evaluate<string>(`document.querySelector('.close-arrows-row input').getAttribute('aria-checked')`)).toBe("true");
+  });
   it("present mode follows v2 steps: main path + branch sub-row, entry/exit chips, via labels, asserted edge for the missing step", async () => {
     await open("#f/shop/s/buy/present/1");
     expect(await count(".lane")).toBe(2); // the story lane + the "Not in a story" tray

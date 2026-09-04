@@ -1,5 +1,6 @@
 import { el, FH, uiScale } from "./svg.js";
 import { state } from "./data-model.js";
+import { iconSvg } from "./icons.js";
 import type { Bundle } from "./types.js";
 
 export interface Pos { x: number; y: number; w: number; h: number }
@@ -20,7 +21,7 @@ export function drawBundle(g: SVGGElement, b: Bundle, pos: Record<string, Pos>, 
 
 export function pill(g: SVGGElement, mx: number, my: number, b: Bundle): void {
   const label = (b.primary.trigger.length > 24 ? b.primary.trigger.slice(0, 23) + "…" : b.primary.trigger) + (b.edges.length > 1 ? `  +${b.edges.length - 1}` : "");
-  const w = label.length * 6 + 16; const pg = uiScale("ui-scale center", mx - w / 2, my - 10);
-  pg.append(el("rect", { x: 0, y: 0, width: w, height: 20, class: "pill-bg " + b.confidence }), el("text", { x: w / 2, y: 14, "text-anchor": "middle", class: "pill" }, label));
+  const warn = b.confidence === "low"; const w = label.length * 6 + (warn ? 30 : 16); const pg = uiScale("ui-scale center", mx - w / 2, my - 10);
+  pg.append(el("rect", { x: 0, y: 0, width: w, height: 20, class: "pill-bg " + b.confidence })); if (warn) pg.append(iconSvg("warning", 5, 4, 12)); pg.append(el("text", { x: warn ? 21 : w / 2, y: 14, "text-anchor": warn ? "start" : "middle", class: "pill" }, label));
   g.append(pg);
 }
