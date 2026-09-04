@@ -46,7 +46,21 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
     canvas.fit();
   };
   const go = (): void => { render(); const h = hashOf(); if (location.hash !== h) { applyingHash = true; history.pushState(null, "", h); applyingHash = false; } };
-  const select = (item: ScreenNode | Bundle): void => { if (state.mode === "present") return; state.selected = item; go(); showDrawer(item, select, openLightbox); if ("id" in item && state.mode === "inspect" && state.level === "feature") canvas.focusOn(routeOf(item.id) ?? item.id); };
+  /** Only the URL hash changes when a rendered frame is re-selected: toggle `.selected` in place instead of a full
+   * `render()` (perf audit H5/measurement 21: a full inspect re-render is 54ms at 147 frames, 320ms at 504).
+   * Bundle (edge) selections and any level/mode/feature change still fall through to a full render — both can
+   * change which nodes/edges exist, so a targeted class toggle would not be correct there. */
+  const select = (item: ScreenNode | Bundle): void => {
+    if (state.mode === "present") return;
+    const prev = state.selected; state.selected = item;
+    const fastPath = state.mode === "inspect" && state.level === "feature" && "id" in item && (prev === null || "id" in prev);
+    if (fastPath) {
+      if (prev && "id" in prev) view.querySelector(`[data-node="${CSS.escape(prev.id)}"]`)?.classList.remove("selected");
+      view.querySelector(`[data-node="${CSS.escape(item.id)}"]`)?.classList.add("selected");
+      const h = hashOf(); if (location.hash !== h) { applyingHash = true; history.pushState(null, "", h); applyingHash = false; }
+    } else go();
+    showDrawer(item, select, openLightbox); if ("id" in item && state.mode === "inspect" && state.level === "feature") canvas.focusOn(routeOf(item.id) ?? item.id);
+  };
   const openStoryOf = (s: ScreenNode): void => { const st = D.stories.find((x) => x.screens.some((id) => routeOf(id) === routeOf(s.id))); if (st && state.story !== st.id) { state.story = st.id; state.selected = s; go(); } };
   const nav: NavHandlers = {
     openFeature: (id, story) => { state.level = "feature"; state.feature = id; state.story = story; state.step = 0; state.selected = null; go(); },

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { loadConfig } from "../schema/code2flow-config.js";
@@ -30,15 +31,19 @@ export async function exportCommand(repoArg: string, viewerDir: string, flags: R
   const js = readFileSync(join(viewerDir, "viewer.js"), "utf8"); const css = readFileSync(join(viewerDir, "viewer.css"), "utf8"); const html = readFileSync(join(viewerDir, "index.html"), "utf8");
   const outDir = typeof flags.out === "string" ? resolve(flags.out) : join(dataDir, "export"); mkdirSync(outDir, { recursive: true });
   const product = basename(rootDir);
-  const dataUri = (file: string): string | null => (existsSync(file) ? "data:image/jpeg;base64," + readFileSync(file).toString("base64") : null);
+  const shotBytes = (file: string): Buffer | null => (existsSync(file) ? readFileSync(file) : null);
   const pack = (screenIds: Set<string> | null, label: string): string => {
     const full: Record<string, string> = {}, dialog: Record<string, string> = {};
-    for (const s of graph.screens) { if (screenIds && !screenIds.has(s.id)) continue; const files = shotFiles(join(dataDir, "shots"), s.id); const f = dataUri(files.full); if (f) full[s.id] = f; const d = dataUri(files.dialog); if (d) dialog[s.id] = d; }
+    // Screens with a byte-identical capture (e.g. every unauthenticated screen redirected to the same login page)
+    // otherwise base64-encoded the same JPEG once per screen: a content-hash index embeds each distinct image once.
+    const blobs: Record<string, string> = {};
+    const blobKey = (bytes: Buffer): string => { const hash = createHash("sha1").update(bytes).digest("hex"); blobs[hash] ??= "data:image/jpeg;base64," + bytes.toString("base64"); return hash; };
+    for (const s of graph.screens) { if (screenIds && !screenIds.has(s.id)) continue; const files = shotFiles(join(dataDir, "shots"), s.id); const f = shotBytes(files.full); if (f) full[s.id] = blobKey(f); const d = shotBytes(files.dialog); if (d) dialog[s.id] = blobKey(d); }
     // Graph/titles carry code snippets with `<div` and arrows: base64 keeps them out of the HTML parser's (and linters') way.
     // The shots block is plain JSON, so `<` in a screen id (a directory name in the target repo) is escaped as \\u003c.
     const b64 = Buffer.from(JSON.stringify({ graph, meta, titles, urls, stories: manifest?.stories ?? [], features, productName: product })).toString("base64");
-    const shotsJson = escapeJsonForScript(JSON.stringify({ full, dialog }));
-    const boot = `<script id="c2f-shots" type="application/json">${shotsJson}</script><script id="c2f-data" type="text/plain">${b64}</script><script>window.CODE2FLOW_DATA=(()=>{const d=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(document.getElementById("c2f-data").textContent.trim()),c=>c.charCodeAt(0))));const s=JSON.parse(document.getElementById("c2f-shots").textContent);d.shotUrl=(id)=>s.full[id]??null;d.dialogUrl=(id)=>s.dialog[id]??null;return d;})();</script>`;
+    const shotsJson = escapeJsonForScript(JSON.stringify({ full, dialog, blobs }));
+    const boot = `<script id="c2f-shots" type="application/json">${shotsJson}</script><script id="c2f-data" type="text/plain">${b64}</script><script>window.CODE2FLOW_DATA=(()=>{const d=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(document.getElementById("c2f-data").textContent.trim()),c=>c.charCodeAt(0))));const s=JSON.parse(document.getElementById("c2f-shots").textContent);const resolve=(map,id)=>{const h=map[id];return h!=null?(s.blobs[h]??null):null;};d.shotUrl=(id)=>resolve(s.full,id);d.dialogUrl=(id)=>resolve(s.dialog,id);return d;})();</script>`;
     // Function replacements: `$&`-style patterns inside the viewer source must be copied literally.
     return html.replace('<link rel="stylesheet" href="./viewer.css">', () => `<style>${css}</style>`)
       .replace('<script type="module" src="./viewer.js"></script>', () => `${boot}\n<script type="module">${js}</script>`)

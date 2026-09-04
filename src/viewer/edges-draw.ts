@@ -6,7 +6,7 @@ import type { Bundle } from "./types.js";
 export interface Pos { x: number; y: number; w: number; h: number }
 
 /** Bezier between two frames with the primary trigger pill; return edges dip below the frames without a pill. */
-export function drawBundle(g: SVGGElement, b: Bundle, pos: Record<string, Pos>, onSelect: (b: Bundle) => void, opts: { faded?: boolean } = {}): void {
+export function drawBundle(g: SVGGElement, b: Bundle, pos: Record<string, Pos>, onSelect: (b: Bundle) => void, opts: { faded?: boolean } = {}, placed?: number[]): void {
   const s = pos[b.source], t = pos[b.target]; if (!s || !t) return;
   const ret = t.x < s.x; const x1 = s.x + s.w, y1 = s.y + Math.min(s.h, FH) / 2, x2 = t.x, y2 = t.y + Math.min(t.h, FH) / 2;
   let d: string;
@@ -16,14 +16,21 @@ export function drawBundle(g: SVGGElement, b: Bundle, pos: Record<string, Pos>, 
   const p = el("path", { d, class: cls, "marker-end": "url(#arrow)" }); const hit = el("path", { d, class: "hit" });
   hit.addEventListener("click", (ev) => { ev.stopPropagation(); onSelect(b); });
   g.append(p, hit);
-  if (!ret && !opts.faded) pill(g, (x1 + x2) / 2, (y1 + y2) / 2, b, onSelect);
+  if (!ret && !opts.faded) pill(g, (x1 + x2) / 2, (y1 + y2) / 2, b, onSelect, placed);
 }
 
-export function pill(g: SVGGElement, mx: number, my: number, b: Bundle, onSelect?: (bundle: Bundle) => void): void {
+/**
+ * `placed` collects every pill Y already laid out in the current render batch (one array per caller, e.g. per
+ * feature render): scanning it is the same collision check as before, without re-querying and re-spreading the
+ * live DOM (`querySelectorAll(".edge-pill")`) on every single pill — 16% of render time at 500+ pills (perf audit H3).
+ * Callers that do not pass one keep the DOM-query fallback so the function still works standalone.
+ */
+export function pill(g: SVGGElement, mx: number, my: number, b: Bundle, onSelect?: (bundle: Bundle) => void, placed?: number[]): void {
   const trigger = fitText(b.primary.trigger, 150, 7);
   const label = `${trigger} ${b.edges.length}`; const title = `${b.primary.trigger} · ${b.edges.length} links`;
   const warn = b.confidence === "low"; const w = textW(label, 7) + (warn ? 30 : 16); let y = my;
-  while ([...g.querySelectorAll<SVGGElement>(".edge-pill")].some((pill) => Math.abs(Number(pill.dataset.pillY) - y) < 24)) y += 24;
+  if (placed) { while (placed.some((py) => Math.abs(py - y) < 24)) y += 24; placed.push(y); }
+  else while ([...g.querySelectorAll<SVGGElement>(".edge-pill")].some((pill) => Math.abs(Number(pill.dataset.pillY) - y) < 24)) y += 24;
   const pg = uiScale("ui-scale center edge-pill", mx - w / 2, y - 10); pg.dataset.pillY = String(y);
   pg.setAttribute("tabindex", "0"); pg.setAttribute("role", "button"); pg.setAttribute("aria-label", title); pg.setAttribute("title", title);
   pg.append(el("rect", { x: 0, y: 0, width: w, height: 20, class: "pill-bg " + b.confidence })); if (warn) pg.append(iconSvg("warning", "Review confidence", 5, 4, 12)); pg.append(el("text", { x: warn ? 21 : w / 2, y: 14, "text-anchor": warn ? "start" : "middle", class: "pill" }, label));

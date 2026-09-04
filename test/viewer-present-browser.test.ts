@@ -242,4 +242,21 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     expect(await count('img[src="x"]')).toBe(0);
     expect(await page.evaluate<string>("String(window.__xss)")).toBe("undefined");
   });
+  // Last in the file: this test's selection is left open in the drawer, and a hash-only navigation (this suite's
+  // `open()`) does not close a drawer opened by an earlier test — see main.ts's `popstate` handler. Running last
+  // means its residual selection cannot perturb any later test's icon/evidence-row counts.
+  it("re-selecting a frame toggles .selected in place, without a full re-render (perf audit H5, round-8 item 4)", async () => {
+    await open("#f/shop");
+    const click = (selector: string): Promise<void> => page.evaluate<void>(`document.querySelector(${JSON.stringify(selector)})?.dispatchEvent(new MouseEvent('click', { bubbles: true }))`);
+    await click('[data-node="/"]'); await page.waitForTimeout(200);
+    expect(await page.evaluate<boolean>(`document.querySelector('[data-node="/"]')?.classList.contains('selected') ?? false`)).toBe(true);
+    // A full render() calls view.replaceChildren(), which would discard this marker: it surviving the next click proves the fast path ran.
+    await page.evaluate<void>(`document.querySelector('[data-node="/orders"]').dataset.keepMarker = 'yes'`);
+    await click('[data-node="/orders"]'); await page.waitForTimeout(200);
+    expect(await page.evaluate<string>(`document.querySelector('[data-node="/orders"]')?.dataset.keepMarker ?? ''`)).toBe("yes");
+    expect(await page.evaluate<boolean>(`document.querySelector('[data-node="/"]')?.classList.contains('selected') ?? true`)).toBe(false);
+    expect(await page.evaluate<boolean>(`document.querySelector('[data-node="/orders"]')?.classList.contains('selected') ?? false`)).toBe(true);
+    expect(await page.evaluate<string>("location.hash")).toContain("sel/%2Forders");
+    expect(await count("#drawer.open .inspector-row")).toBeGreaterThan(0);
+  });
 });

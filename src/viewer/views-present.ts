@@ -49,6 +49,7 @@ export function renderLanes(view: SVGGElement, h: PresentHandlers): { story: Sto
     const metaChip = (icon: Parameters<typeof iconSvg>[0], label: string, count?: number, bad = false): void => { meta.append(iconSvg(icon, label, metaX, 0, 14), ...(count === undefined ? [] : [el("text", { x: metaX + 18, y: 11, class: "lane-meta", style: bad ? "fill:var(--bad)" : "" }, String(count))])); metaX += count === undefined ? 22 : 34; };
     metaChip("stack", "Screens", story.screens.length); metaChip("sign-in", "Entry"); if (story.branches?.length) metaChip("git-branch", "Branches", story.branches.length); if (missing.length) metaChip("warning", "Missing screens", missing.length, true); lane.append(meta);
     const eg = el("g"), ng = el("g");
+    const placedPillY: number[] = []; // one collision-check array per lane: see edges-draw.ts pill()
     const edge = (P: Pos, Q: Pos, b: Bundle | null, via: string | undefined, faded: boolean, down: boolean): void => {
       const d = down ? `M${P.x + P.w / 2},${P.y + P.h} C${P.x + P.w / 2},${Q.y - 30} ${Q.x - 40},${Q.y + 20} ${Q.x},${Q.y + 20}` : `M${P.x + P.w},${P.y + 24} C${P.x + P.w + 60},${P.y + 24} ${Q.x - 60},${Q.y + 24} ${Q.x},${Q.y + 24}`;
       const cls = ["edge", b ? b.confidence : "asserted missing", faded ? "faded" : ""].join(" ");
@@ -56,7 +57,7 @@ export function renderLanes(view: SVGGElement, h: PresentHandlers): { story: Sto
       if (b) { const hit = el("path", { d, class: "hit" }); hit.addEventListener("click", (ev) => { ev.stopPropagation(); h.onSelectBundle(b); }); eg.append(hit); }
       if (faded) return;
       const label: Bundle = b ? { ...b, primary: { ...b.primary, trigger: via ?? b.primary.trigger } } : { source: P.x + "", target: Q.x + "", edges: [], primary: { id: "", source: "", target: "", trigger: (via ? via + " · " : "") + "not in code", confidence: "low", pattern: "asserted", scope: "screen", evidence: { file: "", line: 0 }, resolved: false }, confidence: "low", missing: true };
-      pill(eg, down ? Q.x - 20 : (P.x + P.w + Q.x) / 2, down ? Q.y - 6 : P.y + 24, label);
+      pill(eg, down ? Q.x - 20 : (P.x + P.w + Q.x) / 2, down ? Q.y - 6 : P.y + 24, label, undefined, placedPillY);
     };
     for (const row of rows) {
       if (row.title) { const bt = uiScale("ui-scale", row.x0, row.y - 22); bt.append(el("text", { x: 0, y: 12, class: "lane-meta" }, `↳ ${row.title}`)); ng.append(bt); }

@@ -6,12 +6,30 @@ import type { Feature } from "./types.js";
 
 export interface FeatureStats { routes: number; states: number; stories: number; low: number; missing: number; xf: number; edges: number }
 
+/**
+ * `featureOf`/`featureStats` are pure functions of `D` (never `state`), but `featureStats` alone scans every
+ * edge for every feature (O(features × edges)) and both were previously recomputed on every render — every
+ * selection, even a toggle that changes no data (perf audit H4, 7.7% of a 744-screen render). A cache keyed by
+ * the `D` object reference self-invalidates on the next `initData()` load without editing data-model.ts.
+ */
+const featureOfCache = new WeakMap<typeof D, Map<string, string>>();
+export function cachedFeatureOf(id: string): string {
+  let m = featureOfCache.get(D); if (!m) { m = new Map(); featureOfCache.set(D, m); }
+  let v = m.get(id); if (v === undefined) { v = featureOf(id); m.set(id, v); }
+  return v;
+}
+
+const featureStatsCache = new WeakMap<typeof D, Map<string, FeatureStats>>();
 export function featureStats(f: Feature): FeatureStats {
-  const fr = routes.filter((r) => featureOf(r.id) === f.id); const { bundles, stats } = deriveFrameEdges(fr.map((r) => r.id), "inspect");
-  const states = D.graph.screens.filter((s) => s.kind !== "route" && featureOf(s.id) === f.id).length;
+  let m = featureStatsCache.get(D); if (!m) { m = new Map(); featureStatsCache.set(D, m); }
+  const cached = m.get(f.id); if (cached) return cached;
+  const fr = routes.filter((r) => cachedFeatureOf(r.id) === f.id); const { bundles, stats } = deriveFrameEdges(fr.map((r) => r.id), "inspect");
+  const states = D.graph.screens.filter((s) => s.kind !== "route" && cachedFeatureOf(s.id) === f.id).length;
   const stories = D.stories.filter((s) => storyFeature(s) === f.id).length;
   const low = [...stats.values()].reduce((n, s) => n + s.low, 0); const missing = bundles.filter((b) => b.missing).length; const xf = bundles.filter((b) => b.target.startsWith("portal:")).length;
-  return { routes: fr.length, states, stories, low, missing, xf, edges: bundles.filter((b) => !b.target.startsWith("stub:") && !b.target.startsWith("portal:")).length };
+  const result: FeatureStats = { routes: fr.length, states, stories, low, missing, xf, edges: bundles.filter((b) => !b.target.startsWith("stub:") && !b.target.startsWith("portal:")).length };
+  m.set(f.id, result);
+  return result;
 }
 
 /** Product map: one card per feature, cross-feature transitions bundled with counts. */
@@ -19,7 +37,7 @@ export function renderMap(view: SVGGElement, onOpen: (featureId: string) => void
   const g = el("g"); const CW = 300, CH = 190, GAP = 40; const ordered = [...D.features].sort((a, b) => a.order - b.order);
   const pos: Record<string, { x: number; y: number }> = {}; ordered.forEach((f, i) => { pos[f.id] = { x: 60 + (i % 3) * (CW + GAP), y: 80 + Math.floor(i / 3) * (CH + GAP + 60) }; });
   const xf = new Map<string, number>();
-  for (const e of D.graph.edges) { if (e.scope !== "screen") continue; const a = routeOf(e.source), b = routeOf(e.target); if (!a || !b) continue; const fa = featureOf(a), fb = featureOf(b); if (fa !== fb) xf.set(fa + ">" + fb, (xf.get(fa + ">" + fb) ?? 0) + 1); }
+  for (const e of D.graph.edges) { if (e.scope !== "screen") continue; const a = routeOf(e.source), b = routeOf(e.target); if (!a || !b) continue; const fa = cachedFeatureOf(a), fb = cachedFeatureOf(b); if (fa !== fb) xf.set(fa + ">" + fb, (xf.get(fa + ">" + fb) ?? 0) + 1); }
   for (const [k, n] of xf) {
     const [a, b] = k.split(">"); const pa = pos[a], pb = pos[b]; if (!pa || !pb) continue;
     const x1 = pa.x + CW / 2, y1 = pa.y, x2 = pb.x + CW / 2, y2 = pb.y;

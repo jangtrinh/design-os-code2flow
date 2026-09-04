@@ -1,8 +1,8 @@
 import { join } from "node:path";
 import type { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
-import type { ScreenNode } from "../../schema/index.js";
-import { parseSourceFile, traverseFile, type ParsedFile } from "./parse-source-file.js";
+import type { Counters, ScreenNode } from "../../schema/index.js";
+import { parseSourceFile, traverseFile, type ParseCache, type ParsedFile } from "./parse-source-file.js";
 import { stateKindForKey } from "./state-screens.js";
 import { collectArrayLiteral, collectMembershipArray, collectStateAlias } from "./state-key-aliases.js";
 
@@ -29,8 +29,8 @@ export interface ScreenIndex {
   calls: Map<string, { args: t.CallExpression["arguments"]; parsed: ParsedFile; path: NodePath }[]>;
 }
 
-export function buildScreenIndex(rootDir: string, screen: ScreenNode, files: string[]): ScreenIndex {
-  const parsed = files.map((f) => parseSourceFile(join(rootDir, f), f)).filter((p): p is ParsedFile => p !== null);
+export function buildScreenIndex(rootDir: string, screen: ScreenNode, files: string[], cache?: ParseCache, counters?: Counters): ScreenIndex {
+  const parsed = files.map((f) => parseSourceFile(join(rootDir, f), f, cache, counters)).filter((p): p is ParsedFile => p !== null);
   const index: ScreenIndex = { screen, files: parsed, stateKeys: new Set(), props: new Map(), componentState: new Map(), declaredStates: [], setterToComponent: new Map(), calls: new Map(), conditionallyRendered: new Set() };
   const stateVars = new Map<string, string>(); // local alias → state key, e.g. stepParam → step
   const aliasValues = new Map<string, { key: string; value: string }>(); // `const filterOpen = first(sp.filter) === "open"`

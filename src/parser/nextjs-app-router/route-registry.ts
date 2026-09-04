@@ -59,6 +59,9 @@ export function buildRouteRegistry(rootDir: string, appDir: string, locales: str
 
 function walk(dir: string, appDir: string, rootDir: string, out: ScreenNode[]): void {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    // Neither isDirectory() nor the PAGE_FILES check below discriminates a symlink from a real file/dir:
+    // a symlinked `page.tsx` pointing outside the repo would otherwise become a Route Screen.
+    if (entry.isSymbolicLink()) continue;
     if (entry.isDirectory()) {
       if (isSkippedSubtree(entry.name)) continue;
       walk(join(dir, entry.name), appDir, rootDir, out);

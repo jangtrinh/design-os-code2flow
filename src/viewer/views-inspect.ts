@@ -38,7 +38,8 @@ export function renderInspect(view: SVGGElement, h: InspectHandlers): { scope: s
   let ux = Math.max(...Object.values(pos).map((p) => p.x + p.w), 0) + 160, uy = 60;
   for (const id of unl) { const d = frameDims(id, false); pos[id] = { x: ux, y: uy, w: d.w, h: d.h }; uy += d.h + 30; }
   const eg = el("g"), ng = el("g");
-  bundles.forEach((b) => drawBundle(eg, b, pos, h.onSelectBundle));
+  const placedPillY: number[] = []; // one collision-check array per render batch: see edges-draw.ts pill()
+  bundles.forEach((b) => drawBundle(eg, b, pos, h.onSelectBundle, {}, placedPillY));
   for (const id of scope) {
     const p = pos[id]; if (!p) continue;
     const node = frameNode(id, p.x, p.y, { stats: stats.get(id), badge: unl.includes(id) ? "unlinked" : null, cls: state.selected && "id" in state.selected && state.selected.id === id ? "selected" : "" }, h.onSelect, h.onOpenStory);

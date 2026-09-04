@@ -1,8 +1,8 @@
 import { readdirSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import * as t from "@babel/types";
-import type { ScreenNode } from "../../schema/index.js";
-import { parseSourceFile, traverseFile } from "./parse-source-file.js";
+import type { Counters, ScreenNode } from "../../schema/index.js";
+import { parseSourceFile, traverseFile, type ParseCache } from "./parse-source-file.js";
 import { resolveSourceModule } from "./resolve-source-module.js";
 
 const SOURCE_EXT = /\.(tsx|ts|jsx|js)$/;
@@ -14,18 +14,18 @@ const LAYOUT_FILE = /^(layout|template|loading|error|not-found)\.(tsx|jsx|ts|js)
  * subtrees that are themselves routes (contain a page file) or are parallel/api segments.
  * layout/loading/error files are skipped here; shell-wide navigation is phase 04.
  */
-export function collectScreenFiles(rootDir: string, screen: ScreenNode): string[] {
+export function collectScreenFiles(rootDir: string, screen: ScreenNode, cache?: ParseCache, counters?: Counters): string[] {
   const screenDir = join(rootDir, dirname(screen.filePath));
   const out: string[] = [];
-  walk(screenDir, rootDir, out, true);
+  walk(screenDir, rootDir, out, true, counters);
   const seen = new Set(out);
-  for (let i = 0; i < out.length; i++) collectImports(join(rootDir, out[i]), rootDir, out, seen);
+  for (let i = 0; i < out.length; i++) collectImports(join(rootDir, out[i]), rootDir, out, seen, cache, counters);
   return out;
 }
 
 /** One Route Screen owns the local components it imports, including their nested local components. */
-function collectImports(file: string, rootDir: string, out: string[], seen: Set<string>): void {
-  const parsed = parseSourceFile(file, relative(rootDir, file));
+function collectImports(file: string, rootDir: string, out: string[], seen: Set<string>, cache?: ParseCache, counters?: Counters): void {
+  const parsed = parseSourceFile(file, relative(rootDir, file), cache, counters);
   if (!parsed) return;
   const renderedWithProps = new Set<string>();
   traverseFile(parsed, { JSXOpeningElement(path) {
@@ -59,15 +59,23 @@ function isHrefWrapper(file: NonNullable<ReturnType<typeof parseSourceFile>>): b
   return found;
 }
 
-function walk(dir: string, rootDir: string, out: string[], isScreenRoot: boolean): void {
+function walk(dir: string, rootDir: string, out: string[], isScreenRoot: boolean, counters?: Counters): void {
   const entries = readdirSync(dir, { withFileTypes: true });
   if (!isScreenRoot && entries.some((e) => e.isFile() && PAGE_FILE.test(e.name))) return; // another screen's subtree
   for (const entry of entries) {
+    // A symlink's Dirent is neither isDirectory() nor isFile(): without this check a symlinked file matching
+    // SOURCE_EXT fell through to the push below and its target (possibly outside the repo) leaked into the graph.
+    if (entry.isSymbolicLink()) { if (counters) bump(counters, relative(rootDir, join(dir, entry.name)), "symlink-skipped"); continue; }
     if (entry.isDirectory()) {
       if (entry.name === "node_modules" || entry.name === "api" || entry.name.startsWith("@")) continue;
-      walk(join(dir, entry.name), rootDir, out, false);
+      walk(join(dir, entry.name), rootDir, out, false, counters);
     } else if (SOURCE_EXT.test(entry.name) && !LAYOUT_FILE.test(entry.name) && !/\.(test|spec|stories)\./.test(entry.name)) {
       out.push(relative(rootDir, join(dir, entry.name)));
     }
   }
+}
+
+function bump(counters: Counters, file: string, name: string): void {
+  counters[file] ??= {};
+  counters[file][name] = (counters[file][name] ?? 0) + 1;
 }

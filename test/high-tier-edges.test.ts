@@ -23,7 +23,7 @@ describe("ingest → high-tier edges (seam)", () => {
   });
   it("counts hash anchors and self-loop redirects instead of drawing them", async () => {
     const graph = await ingest(FIXTURE);
-    expect(graph.counters["app/page.tsx"]).toEqual({ "anchor-hash": 1, normalizations: 1 });
+    expect(graph.counters["app/page.tsx"]).toEqual({ "anchor-hash": 1, normalizations: 1, "parse-cache-hit": 1 }); // buildScreenIndex reuses collectScreenFiles' parse of the page file (round-8 perf item 2)
     expect(graph.edges.some((e) => e.target === "/" && e.source === "/")).toBe(false);
   });
 });

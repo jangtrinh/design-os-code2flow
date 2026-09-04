@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import * as t from "@babel/types";
 import type { ActionEdge, Counters } from "../../schema/index.js";
-import { lineOf, parseSourceFile, snippetAt, traverseFile, type ParsedFile } from "./parse-source-file.js";
+import { lineOf, parseSourceFile, snippetAt, traverseFile, type ParseCache, type ParsedFile } from "./parse-source-file.js";
 import type { RouteRegistry } from "./route-registry.js";
 
 /** A component counts as app shell when at least this share of Route Screens render it. */
@@ -16,7 +16,7 @@ const LAYOUT_FILE = /^layout\.(tsx|jsx|js)$/;
  * nav is shell nav regardless of any usage share (the root layout for all pages, a nested layout for its subtree).
  * Emitted once with scope "shell" so the canvas can hide them by default (ADR-0005).
  */
-export function detectShellNavigation(rootDir: string, appDir: string, pages: ParsedFile[], registry: RouteRegistry, counters: Counters): ActionEdge[] {
+export function detectShellNavigation(rootDir: string, appDir: string, pages: ParsedFile[], registry: RouteRegistry, counters: Counters, cache?: ParseCache): ActionEdge[] {
   const usage = new Map<string, { count: number; source: string; fromFile: string }>();
   for (const page of pages) {
     const imports = importedComponents(page);
@@ -36,12 +36,12 @@ export function detectShellNavigation(rootDir: string, appDir: string, pages: Pa
     shellFiles.add(file);
     for (const sibling of siblingSources(file)) shellFiles.add(sibling); // one hop: nav-bell.tsx next to app-shell.tsx
   }
-  for (const f of collectLayoutShellFiles(rootDir, appDir, counters)) shellFiles.add(f);
+  for (const f of collectLayoutShellFiles(rootDir, appDir, counters, cache)) shellFiles.add(f);
   const edges: ActionEdge[] = [];
   const seen = new Set<string>();
   let seq = 0;
   for (const abs of shellFiles) {
-    const parsed = parseSourceFile(abs, relative(rootDir, abs));
+    const parsed = parseSourceFile(abs, relative(rootDir, abs), cache, counters);
     if (!parsed) { bump(counters, relative(rootDir, abs), "parse-error"); continue; }
     for (const link of literalHrefs(parsed)) {
       if (link.href === "" || link.href.startsWith("#")) { bump(counters, parsed.file, "shell-empty-href"); continue; }
@@ -85,11 +85,11 @@ function siblingSources(file: string): string[] {
  * (a `<SiteHeader/>` that itself contains the real nav `<Link>`s, the common shape) — unconditionally, no usage
  * share: a layout wraps every page beneath it, so its nav (direct or one hop away) is always shell nav.
  */
-function collectLayoutShellFiles(rootDir: string, appDir: string, counters: Counters): Set<string> {
+function collectLayoutShellFiles(rootDir: string, appDir: string, counters: Counters, cache?: ParseCache): Set<string> {
   const files = new Set<string>();
   for (const abs of collectLayoutFiles(appDir)) {
     files.add(abs);
-    const parsed = parseSourceFile(abs, relative(rootDir, abs));
+    const parsed = parseSourceFile(abs, relative(rootDir, abs), cache, counters);
     if (!parsed) { bump(counters, relative(rootDir, abs), "parse-error"); continue; }
     const imports = importedComponents(parsed);
     const rendered = new Set<string>();

@@ -1,6 +1,6 @@
 import type { ScreenNode } from "../schema/index.js";
-import { byId, D, escapeHtml as esc, featById, featureOf, humanize, realTitle, routeOf, routes, routeTitle, state, storyFeature } from "./data-model.js";
-import { featureStats } from "./views-map.js";
+import { byId, D, escapeHtml as esc, featById, humanize, realTitle, routeOf, routes, routeTitle, state, storyFeature } from "./data-model.js";
+import { cachedFeatureOf as featureOf, featureStats } from "./views-map.js";
 import { createDropdown } from "./dropdown.js";
 import { iconHtml } from "./icons.js";
 import type { Bundle } from "./types.js";
