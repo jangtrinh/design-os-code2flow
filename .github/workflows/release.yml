@@ -1,7 +1,9 @@
 name: release
-# Publishes to npm with trusted publishing (OIDC): no token in the repo.
-# One-time setup on npmjs.com → package → Settings → Trusted publisher: GitHub Actions,
-# repository jangtrinh/design-os-code2flow, workflow release.yml, environment (none).
+# Stages the release on npm with trusted publishing (OIDC): no token in the repo.
+# The trusted publisher on npmjs.com (jangtrinh/design-os-code2flow, release.yml, no environment)
+# has the "npm stage publish" permission, so CI stages the version and the maintainer approves it
+# with proof of presence: `npm stage list design-os-code2flow` → `npm stage approve <stage-id>` (2FA / security key),
+# or on npmjs.com. Direct `npm publish` from CI is denied by that permission.
 on:
   push:
     tags: ["v*"]
@@ -22,7 +24,8 @@ jobs:
       - run: npm run build
       - name: version must match the tag
         run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
-      - run: npm publish --provenance --access public
+      - name: stage the version on npm (approve it with `npm stage approve <stage-id>`)
+        run: npm stage publish . --provenance --access public
       - name: GitHub release with the tarball
         run: npm pack && gh release create "${GITHUB_REF_NAME}" ./*.tgz --title "${GITHUB_REF_NAME}" --generate-notes
         env: { GH_TOKEN: "${{ github.token }}" }
