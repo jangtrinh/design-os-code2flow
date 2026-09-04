@@ -49,10 +49,12 @@ export function targetForHtmlHref(
 
 function resolveHtmlHref(route: string, href: string): string {
   return (
-    href.startsWith("/")
-      ? href
-      : posix.normalize(posix.join(posix.dirname(route), href))
-  ).replace(/\.html(?=\?|#|$)/, "");
+    posix.normalize(
+      href.startsWith("/") ? href : posix.join(posix.dirname(route), href),
+    )
+      .replace(/\.html(?=\?|#|$)/, "")
+      .replace(/\/index(?=\?|#|$)/, "") || "/"
+  );
 }
 
 function incrementCounter(

@@ -14,15 +14,20 @@ const attributePattern =
 /** Scans ordinary HTML tags without depending on a browser DOM implementation. */
 export function scanHtmlTags(source: string): HtmlTag[] {
   const tags: HtmlTag[] = [];
+  let line = 1;
+  let cursor = 0;
   for (const match of source.matchAll(tagPattern)) {
     const raw = match[0];
     const start = match.index ?? 0;
+    for (let index = cursor; index < start; index += 1)
+      if (source[index] === "\n") line += 1;
+    cursor = start;
     tags.push({
       name: match[1].toLowerCase(),
       attributes: parseHtmlAttributes(match[2]),
       start,
       end: start + raw.length,
-      line: source.slice(0, start).split("\n").length,
+      line,
       closing: raw.startsWith("</"),
     });
   }

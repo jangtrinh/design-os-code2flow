@@ -34,11 +34,11 @@ export const reactRouterAdapter: IngestorAdapter<DetectedReactRouter> = {
   },
 };
 
-function extractEdges(file: ParsedFile, owners: Map<string, string>, shells: Set<string>, resolve: (path: string) => string | null, screens: ScreenNode[], states: Map<string, ScreenNode>, counters: Counters): ActionEdge[] {
+function extractEdges(file: ParsedFile, owners: Map<string, string>, shells: Set<string>, resolve: (path: string) => string | null, _screens: ScreenNode[], states: Map<string, ScreenNode>, counters: Counters): ActionEdge[] {
   const edges: ActionEdge[] = [];
   let sequence = 0;
   const ownerFor = (path: Parameters<typeof enclosingComponentName>[0]) => enclosingComponentName(path);
-  const sourceFor = (path: Parameters<typeof enclosingComponentName>[0]) => owners.get(ownerFor(path) ?? "") ?? routeObjectPath(path) ?? screens[0]?.id;
+  const sourceFor = (path: Parameters<typeof enclosingComponentName>[0]) => owners.get(ownerFor(path) ?? "") ?? routeObjectPath(path);
   const add = (path: Parameters<typeof enclosingComponentName>[0], value: string, pattern: string, confidence: "high" | "medium" = "high") => {
     const source = sourceFor(path); if (!source) { bump(counters, file.file, "navigation-without-route"); return; }
     if (value.startsWith("#")) { bump(counters, file.file, "anchor-hash"); return; }

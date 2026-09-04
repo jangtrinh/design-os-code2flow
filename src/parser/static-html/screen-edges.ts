@@ -13,7 +13,7 @@ interface HtmlLink {
   href: string;
   label: string;
   line: number;
-  pattern: "anchor-href-literal" | "form-action-literal";
+  pattern: "anchor-href-literal" | "form-action-literal" | "button-showmodal";
   shell: boolean;
 }
 export interface CollectedLink {
@@ -58,6 +58,8 @@ export function collectHtmlLinks(
             htmlTagLabel(file.source, tag) || "Open dialog",
             tag.line,
             false,
+            false,
+            "button-showmodal",
           ),
         );
     }
@@ -109,7 +111,7 @@ export function edgeForHtmlLink(
     target,
     trigger: shell
       ? `Nav: ${item.link.label}`
-      : `${item.link.pattern === "form-action-literal" ? "Form" : "Link"}: ${item.link.label}`,
+      : `${item.link.pattern === "form-action-literal" ? "Form" : item.link.pattern === "button-showmodal" ? "Button" : "Link"}: ${item.link.label}`,
     confidence: "high",
     pattern: shell ? "shell-nav-literal" : item.link.pattern,
     evidence: { file: item.file.file, line: item.link.line },
@@ -126,6 +128,7 @@ function createLink(
   line: number,
   shell: boolean,
   form = false,
+  pattern?: HtmlLink["pattern"],
 ): CollectedLink {
   return {
     file,
@@ -134,7 +137,7 @@ function createLink(
       label,
       line,
       shell,
-      pattern: form ? "form-action-literal" : "anchor-href-literal",
+      pattern: pattern ?? (form ? "form-action-literal" : "anchor-href-literal"),
     },
     key: `${href}|${label}`,
   };

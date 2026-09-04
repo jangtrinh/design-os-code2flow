@@ -17,7 +17,23 @@ Navigation Edge. Literal external and mailto links remain external targets; brok
 internal paths remain `missing:` targets.
 
 Counters retain anchors without a discovered dialog as `anchor-hash`, mail links as
-`mailto-link`, and other external links as `external-link`, per source file. The tag
+`mailto-link`, other external links as `external-link`, and duplicate shared header links as
+`shell.duplicate-shell-edge`. The tag
 scanner is intentionally tolerant rather than a full HTML parser: it does not model
 malformed HTML, templates, script-built URLs, arbitrary JavaScript, or hash-router
 applications.
+
+## React Router
+
+React Router is selected after Next.js when `package.json` declares `react-router` or
+`react-router-dom` and source contains `createBrowserRouter`, `<Routes>`, or `<Route>`.
+Route Screen ids normalize `:id` to `[id]` and `*` to `[...rest]`; modal and tab State
+Screens append `#id` and `?tab=value`. The adapter extracts literal `<Link>`, `<NavLink>`,
+`<Navigate>`, `useNavigate`, and `redirect` transitions, including shell navigation from a
+layout with an outlet. Unowned navigation is counted as `navigation-without-route`; history
+offsets, hash-only links, unresolved `to` values, and parse failures have their own counters.
+
+Catch-all routes intentionally do not resolve ordinary unmatched literal links: those remain
+`missing:` targets so lint keeps reporting broken links. The adapter does not prove runtime
+route ownership through arbitrary component composition, computed navigation, hash routers,
+or every possible `useSearchParams` data flow.

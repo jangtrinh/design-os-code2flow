@@ -16,11 +16,18 @@ describe("React Router adapter", () => {
     const result = await reactRouterAdapter.ingest(fixture, reactRouterAdapter.detect(fixture)!);
     const graph = result.graph;
     expect(result.resolver.resolve("/users/alice")).toBe("/users/[id]");
-    expect(graph.edges.map(key)).toEqual(expect.arrayContaining(["/ -> /users/[id]", "/users -> /users/[id]", "/users -> missing:/nowhere", "/checkout -> /thanks", "/old-users -> /users", "/users -> /users#invite-dialog", "shell -> /", "shell -> /users", "shell -> /settings"]));
+    expect(result.resolver.resolve("/nowhere")).toBeNull();
+    expect(graph.edges.map(key)).toEqual(expect.arrayContaining(["/users -> /users/[id]", "/users -> missing:/nowhere", "/checkout -> /thanks", "/old-users -> /users", "/users -> /users#invite-dialog", "/settings -> /settings?tab=billing", "shell -> /", "shell -> /users", "shell -> /settings"]));
     const dataLink = graph.edges.find((edge) => edge.pattern === "link-to-template")!;
     expect(dataLink).toMatchObject({ source: "/users", target: "/users/[id]", confidence: "medium", evidence: { file: "src/routes.tsx" } });
     for (const edge of graph.edges) { expect(edge.evidence.line).toBeGreaterThan(0); expect(["high", "medium"]).toContain(edge.confidence); }
     expect(graph.edges.filter((edge) => edge.scope === "shell")).toHaveLength(3);
     expect(graph.counters["src/routes.tsx"]["navigate-history-offset"]).toBe(1);
+  });
+
+  it("counts navigation outside a route instead of fabricating a source", async () => {
+    const graph = (await reactRouterAdapter.ingest(fixture, reactRouterAdapter.detect(fixture)!)).graph;
+    expect(graph.counters["src/routes.tsx"]?.["navigation-without-route"]).toBe(2);
+    expect(graph.edges.find((edge) => edge.trigger === "Link: Footer users")).toBeUndefined();
   });
 });

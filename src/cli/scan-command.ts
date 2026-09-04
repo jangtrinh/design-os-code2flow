@@ -11,7 +11,7 @@ export interface ScanResult { outDir: string; screens: number; edges: number; ne
 export async function scanCommand(repoArg: string, log: (line: string) => void = console.log): Promise<ScanResult> {
   const rootDir = resolve(repoArg);
   const config = loadConfig(rootDir);
-  const { graph, resolver } = await ingestDetailed(rootDir);
+  const { graph, resolver, adapter } = await ingestDetailed(rootDir);
   const samples = collectRouteSamples(graph, resolver, config, graph.counters);
   const outDir = join(rootDir, ".code2flow");
   mkdirSync(outDir, { recursive: true });
@@ -21,6 +21,7 @@ export async function scanCommand(repoArg: string, log: (line: string) => void =
   const counterTotal = Object.values(graph.counters).reduce((n, c) => n + Object.values(c).reduce((a, b) => a + b, 0), 0);
   const routes = graph.screens.filter((s) => s.kind === "route").length;
   log(`scan  ${rootDir}`);
+  log(`      adapter: ${adapter.label}`);
   log(`      ${routes} routes, ${graph.screens.length - routes} state screens, ${graph.edges.length} edges → ${join(outDir, "graph.json")}`);
   log(`      route samples: ${Object.keys(samples.samples).length} dynamic routes have samples, ${samples.needsSample.length} need one${samples.needsSample.length ? ` (add to ${CONFIG_FILE} routeExamples): ${samples.needsSample.join(", ")}` : ""}`);
   const badExamples = graph.counters[CONFIG_FILE]?.["route-example-not-matching-route"] ?? 0;

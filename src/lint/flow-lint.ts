@@ -42,6 +42,7 @@ export function lintFlow(input: LintInputs): LintReport {
   }
   const shellTargets = new Set(graph.edges.filter((e) => e.scope === "shell").map((e) => e.target));
   for (const r of routes) {
+    if (r.catchAll || /\[\.\.\./.test(r.id)) continue; // a catch-all (404 / [...rest]) is reached by every unmatched URL, not by a link: neither orphan nor dead end
     const isEntry = entries.has(r.id) || r.id === "/" || /sign-?in|log-?in|welcome|launchpad|404|403/i.test(r.id);
     if (!inbound.get(r.id) && !shellTargets.has(r.id) && !isEntry) add("orphan-screen", "warn", r, "no transition reaches this screen and it is not in the sidebar", r.filePath);
     if (!outbound.get(r.id) && !inplace.get(r.id) && !/404|403|not-found/i.test(r.id)) add("dead-end", "info", r, "no transition leaves this screen (no button, link or form leads anywhere)", r.filePath);

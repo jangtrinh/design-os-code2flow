@@ -76,10 +76,17 @@ export const staticHtmlAdapter: IngestorAdapter<StaticHtmlDetection> = {
         screens: [...routeScreens, ...stateScreens.values()].sort((a, b) =>
           a.id.localeCompare(b.id),
         ),
-        edges: dedupeShellEdges(edges),
+        edges: countedShellDedupe(edges, counters),
         counters,
       },
       resolver,
     };
   },
 };
+
+function countedShellDedupe(edges: ActionEdge[], counters: Counters): ActionEdge[] {
+  const deduped = dedupeShellEdges(edges);
+  const dropped = edges.length - deduped.length;
+  if (dropped) counters.shell = { "duplicate-shell-edge": dropped };
+  return deduped;
+}

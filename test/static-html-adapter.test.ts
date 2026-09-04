@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { staticHtmlAdapter } from "../src/parser/static-html/adapter.js";
+import { scanHtmlTags } from "../src/parser/static-html/html-tag-scanner.js";
 
 const fixture = fileURLToPath(
   new URL("../fixtures/synthetic/static-site", import.meta.url),
@@ -52,7 +53,7 @@ describe("static HTML adapter", () => {
         {
           source: "/",
           target: "/#help",
-          trigger: "Link: Help",
+          trigger: "Button: Help",
           confidence: "high",
           evidence: { file: "index.html", line: 4 },
           scope: "screen",
@@ -128,5 +129,20 @@ describe("static HTML adapter", () => {
     expect(
       staticHtmlAdapter.detect("fixtures/synthetic/react-router-app"),
     ).toBeNull();
+  });
+
+  it("scans a 2 MB tag-dense document within two seconds", () => {
+    const source = "<a href=\"/x\">x</a>\n".repeat(80_000);
+    const started = performance.now();
+    expect(scanHtmlTags(source)).toHaveLength(160_000);
+    expect(performance.now() - started).toBeLessThan(2_000);
+  });
+
+  it("normalizes index and dot-segment links", async () => {
+    const { graph } = await staticHtmlAdapter.ingest(fixture, staticHtmlAdapter.detect(fixture)!);
+    expect(graph.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: "/docs", target: "/", href: "../index.html" }),
+      expect.objectContaining({ source: "/docs", target: "/about", href: "/docs/../about" }),
+    ]));
   });
 });

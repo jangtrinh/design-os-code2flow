@@ -23,6 +23,7 @@ describe("code2flow scan (seam: CLI → .code2flow files)", () => {
     expect(samples.samples["/blog/[slug]"]).not.toContain("not-a-path");
     expect(lines.join("\n")).toMatch(/2 routeExamples ignored/);
     expect(lines.join("\n")).toMatch(/route samples: 2 dynamic routes have samples, 1 need one/);
+    expect(lines.join("\n")).toMatch(/adapter: Next\.js App Router/);
   });
   it("parses argv into command, positionals and flags", () => {
     expect(parseArgs(["snapshot", "/repo", "--url", "http://127.0.0.1:3000", "--headed"])).toEqual({ command: "snapshot", positionals: ["/repo"], flags: { url: "http://127.0.0.1:3000", headed: true }, errors: [] });
