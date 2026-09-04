@@ -48,3 +48,5 @@ out/
 # kept out of the public repo: internal plans and the private benchmark
 plans/
 fixtures/benchmarks/
+.code2flow-audit/
+design/memory.events.*

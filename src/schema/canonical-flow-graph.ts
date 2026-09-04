@@ -5,7 +5,7 @@
  */
 
 /** Route Screen = URL route; State Screen = modal/drawer, tab, or wizard step nested under a route. */
-export type ScreenKind = "route" | "modal" | "tab" | "wizard-step";
+export type ScreenKind = "route" | "modal" | "tab" | "wizard-step" | "tooltip" | "popover" | "dropdown";
 
 /** Transition Confidence tier per ADR-0005. */
 export type Confidence = "high" | "medium" | "low";
@@ -29,6 +29,8 @@ export interface ScreenNode {
   dynamic?: boolean; // contains [param]
   catchAll?: boolean; // contains [...param]
   routeAsModal?: boolean; // page renders its content inside an always-open Dialog
+  /** CSS selector for the Action Trigger that opens this hover State Screen during capture. */
+  hoverTriggerSelector?: string;
 }
 
 export interface ActionEdge {
@@ -36,6 +38,7 @@ export interface ActionEdge {
   source: string; // ScreenNode id, or "shell" when scope === "shell"
   target: string; // ScreenNode id, "not-found", "external:<url>", "missing:<path>" (no such route), or "dynamic:<expr>"
   trigger: string; // e.g. 'Button: Pay Now'
+  triggerKind?: "click" | "hover";
   confidence: Confidence;
   pattern: string; // detection heuristic name, used by the recall harness
   evidence: SourceEvidence;

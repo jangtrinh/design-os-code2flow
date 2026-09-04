@@ -1,6 +1,7 @@
 import { D, featureOf, routeOf, routes, storyFeature } from "./data-model.js";
 import { deriveFrameEdges } from "./edge-pipeline.js";
-import { el } from "./svg.js";
+import { el, uiScale } from "./svg.js";
+import { iconSvg } from "./icons.js";
 import type { Feature } from "./types.js";
 
 export interface FeatureStats { routes: number; states: number; stories: number; low: number; missing: number; xf: number; edges: number }
@@ -23,9 +24,9 @@ export function renderMap(view: SVGGElement, onOpen: (featureId: string) => void
   for (const f of ordered) {
     const p = pos[f.id]; const s = featureStats(f); const c = el("g", { class: "card", transform: `translate(${p.x},${p.y})` });
     c.append(el("rect", { class: "bg", width: CW, height: CH, rx: 16 }));
-    c.append(el("text", { x: 18, y: 38, class: "t" }, f.title)); c.append(el("text", { x: 18, y: 80, class: "big" }, String(s.routes))); c.append(el("text", { x: 18 + String(s.routes).length * 17 + 6, y: 80, class: "n" }, "routes"));
-    c.append(el("text", { x: 18, y: 106, class: "n" }, `${s.states} states · ${s.stories} stories`));
-    c.append(el("text", { x: 18, y: 130, class: "n", style: s.missing ? "fill:var(--bad)" : "" }, `${s.edges} flows · ${s.missing} missing`));
+    c.append(el("text", { x: 18, y: 38, class: "t" }, f.title));
+    const metrics = uiScale("ui-scale", 18, 64); let mx = 0; const metric = (icon: Parameters<typeof iconSvg>[0], label: string, count: number, bad = false): void => { metrics.append(iconSvg(icon, label, mx, 0, 14), el("text", { x: mx + 18, y: 11, class: "n", style: bad ? "fill:var(--bad)" : "" }, String(count))); mx += 36; };
+    metric("app-window", "Route screens", s.routes); metric("cards", "State screens", s.states); metric("path", "Story paths", s.stories); metric("flow-arrow", "Flow edges", s.edges); if (s.missing) metric("warning", "Missing screens", s.missing, true); c.append(metrics);
     c.addEventListener("click", () => onOpen(f.id)); g.append(c);
   }
   view.append(g);

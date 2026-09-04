@@ -1,5 +1,7 @@
 # Getting started
 
+For a PO-friendly walkthrough, start with the [user guide](user-guide.md).
+
 Code2Flow turns a web codebase into a living user-flow canvas: every screen (route, modal, drawer, tab, wizard step) is a real screenshot, every arrow is an Action Trigger with `file:line` evidence and a confidence tier. Everything runs on your machine; nothing is uploaded.
 
 Supported today: **Next.js App Router** (`app/` or `src/app/`), **React Router** (v6/v7 route trees in Vite or CRA apps) and **static HTML** folders. Detection order: Next → React Router → static HTML; `scan` prints the adapter it chose. Details and known misses: [adapters](adapters.md).

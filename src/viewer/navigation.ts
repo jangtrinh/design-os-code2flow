@@ -3,8 +3,9 @@ import { byId, D, escapeHtml as esc, featById, featureOf, humanize, realTitle, r
 import { featureStats } from "./views-map.js";
 import { createDropdown } from "./dropdown.js";
 import { iconHtml } from "./icons.js";
+import type { Bundle } from "./types.js";
 
-const icon = (name: Parameters<typeof iconHtml>[0], size = 16): string => iconHtml(name, size);
+const icon = (name: Parameters<typeof iconHtml>[0], label: string, size = 16): string => iconHtml(name, label, size);
 
 export interface NavHandlers { openFeature: (id: string, story: string | null) => void; setStory: (id: string | null) => void; toMap: () => void; toggleDismiss: (v: boolean) => void; gotoScreen: (s: ScreenNode) => void }
 
@@ -12,17 +13,19 @@ export interface NavHandlers { openFeature: (id: string, story: string | null) =
 export function renderRail(h: NavHandlers): void {
   const r = document.getElementById("rail")!; r.replaceChildren();
   const title = (t: string): HTMLElement => { const d = document.createElement("div"); d.className = "legend-title"; d.textContent = t; return d; };
-  const product = title(D.productName); product.innerHTML = `${icon("map-trifold")}<span>${esc(D.productName)}</span>`; r.append(product);
+  const product = title(D.productName); product.innerHTML = `${icon("map-trifold", "Product map")}<span>${esc(D.productName)}</span>`; r.append(product);
   for (const f of [...D.features].sort((a, b) => a.order - b.order)) {
     const s = featureStats(f); const d = document.createElement("button"); d.className = "rail-item" + (state.feature === f.id && state.level === "feature" ? " on" : "");
-    d.innerHTML = `${icon("squares-four", 20)}<span>${esc(f.title)}</span><span class="counter">${s.routes}·${s.stories}</span>`; d.addEventListener("click", () => h.openFeature(f.id, null)); r.append(d);
+    d.innerHTML = `${icon("squares-four", "Feature", 20)}<span>${esc(f.title)}</span><span class="counter-label">${s.routes}·${s.stories}</span>`; d.addEventListener("click", () => h.openFeature(f.id, null)); r.append(d);
     if (state.feature === f.id && state.level === "feature") {
-      for (const st of D.stories.filter((x) => storyFeature(x) === f.id)) { const e = document.createElement("button"); e.className = "rail-item nav-story" + (state.story === st.id ? " on" : ""); e.innerHTML = `${icon("path", 20)}<span>${esc(st.title)}</span><span class="counter">${st.screens.length}</span>`; e.addEventListener("click", () => h.setStory(st.id)); r.append(e); }
+      for (const st of D.stories.filter((x) => storyFeature(x) === f.id)) { const e = document.createElement("button"); e.className = "rail-item nav-story" + (state.story === st.id ? " on" : ""); e.innerHTML = `${icon("path", "Story", 20)}<span>${esc(st.title)}</span><span class="counter-label">${st.screens.length}</span>`; e.addEventListener("click", () => h.setStory(st.id)); r.append(e); }
       const n = document.createElement("button"); n.className = "rail-item nav-story"; const cnt = routes.filter((x) => featureOf(x.id) === f.id && !D.stories.some((y) => y.screens.map(routeOf).includes(x.id))).length;
-      n.innerHTML = `${icon("stack", 20)}<span>Not in a story</span><span class="counter">${cnt}</span>`; n.addEventListener("click", () => { state.mode = "inspect"; h.setStory(null); }); r.append(n);
+      n.innerHTML = `${icon("stack", "Unassigned screens", 20)}<span>Not in a story</span><span class="counter-label">${cnt}</span>`; n.addEventListener("click", () => { state.mode = "inspect"; h.setStory(null); }); r.append(n);
     }
   }
-  const l = document.createElement("label"); const disabled = state.level === "map"; l.className = "option-label close-arrows-row" + (disabled ? " disabled" : ""); l.title = disabled ? "Applies to feature and story pages" : "Show arrows for Cancel/Close/Back buttons (hidden by default)"; l.innerHTML = `${icon("arrow-u-up-left", 20)}<span>Close arrows</span><input role="switch" type="checkbox" aria-checked="${state.showDismiss}" ${state.showDismiss ? "checked" : ""} ${disabled ? "disabled" : ""}>`; l.querySelector("input")!.addEventListener("change", (ev) => h.toggleDismiss((ev.target as HTMLInputElement).checked)); r.append(l);
+  const l = document.createElement("label"); const disabled = state.level === "map"; l.className = "option-label close-arrows-row" + (disabled ? " disabled" : ""); l.title = disabled ? "Applies to feature and story pages" : "Show arrows for Cancel/Close/Back buttons (hidden by default)"; l.innerHTML = `${icon("arrow-u-up-left", "Return action", 20)}<span>Close arrows</span><input role="switch" type="checkbox" aria-checked="${state.showDismiss}" ${state.showDismiss ? "checked" : ""} ${disabled ? "disabled" : ""}>`; l.querySelector("input")!.addEventListener("change", (ev) => h.toggleDismiss((ev.target as HTMLInputElement).checked)); r.append(l);
+  const legend = document.createElement("details"); legend.className = "rail-legend"; legend.open = innerHeight >= 640;
+  legend.innerHTML = `<summary>${icon("question", "Legend")}<span>Legend</span></summary><div class="legend-rows"><div><span class="help-line high"></span>Solid · high</div><div><span class="help-line medium"></span>Grey · medium</div><div><span class="help-line low"></span>Dashed · review</div><div>${icon("link-break", "Broken target")}Broken target</div><div>${icon("sidebar-simple", "Shell target")}Shell target</div><div>${icon("arrow-u-up-left", "Return action")}Return action</div><div>${icon("keyboard", "Keyboard shortcuts")}Arrows · + · − · F</div></div>`; r.append(legend);
   document.querySelectorAll<HTMLButtonElement>("#modeSeg button").forEach((b) => b.classList.toggle("on", b.dataset.mode === state.mode));
 }
 
@@ -30,35 +33,29 @@ export function renderRail(h: NavHandlers): void {
 export function renderCrumb(h: NavHandlers): void {
   const c = document.getElementById("crumb")!; c.replaceChildren();
   const separator = (): HTMLSpanElement => { const s = document.createElement("span"); s.className = "crumb-separator"; s.setAttribute("aria-hidden", "true"); s.textContent = "/"; return s; };
-  const b = document.createElement("button"); b.innerHTML = `${icon("map-trifold")}<span>Product map</span>`; b.addEventListener("click", h.toMap); c.append(b);
+  const b = document.createElement("button"); b.innerHTML = `${icon("map-trifold", "Product map")}<span>Product map</span>`; b.addEventListener("click", h.toMap); c.append(b);
   if (state.level === "feature") {
     c.append(separator());
     c.append(createDropdown("Feature", [...D.features].sort((a, b) => a.order - b.order).map((f) => ({ id: f.id, label: f.title })), state.feature ?? "", (id) => h.openFeature(id, null)));
     c.append(separator());
     c.append(createDropdown("Story", [{ id: "", label: "Feature overview" }, ...D.stories.filter((story) => storyFeature(story) === state.feature).map((story) => ({ id: story.id, label: story.title }))], state.story ?? "", (id) => h.setStory(id || null)));
   }
-  const hud = document.getElementById("hud")!;
-  const kbd = (k: string): string => `<span class="kbd kbd-nav">${icon("keyboard", 14)}${k}</span>`;
-  hud.hidden = state.mode === "present" || state.mode === "play";
-  const ctl = (id: string, label: string, name: Parameters<typeof iconHtml>[0]): string => `<button id="${id}" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="${label}" title="${label}">${icon(name)}</button>`;
-  hud.innerHTML = state.level === "feature" ? `${ctl("z-out", "Zoom out", "minus")}${ctl("z-in", "Zoom in", "plus")}${ctl("fit", "Fit canvas", "corners-out")}<span>${kbd("F")}</span><span>${kbd("[")}${kbd("]")}</span>` : `${ctl("z-out", "Zoom out", "minus")}${ctl("z-in", "Zoom in", "plus")}${ctl("fit", "Fit canvas", "corners-out")}<span>${kbd("/")}</span>`;
-  document.getElementById("nav-back")!.innerHTML = icon("caret-left");
-  document.getElementById("nav-search")!.innerHTML = `${icon("magnifying-glass")}<span>Search</span>`;
-  document.querySelectorAll<HTMLButtonElement>("#modeSeg button").forEach((button) => { const name = button.dataset.mode === "inspect" ? "eye" : button.dataset.mode === "present" ? "presentation" : "play"; button.innerHTML = `${icon(name)}<span>${button.dataset.mode![0].toUpperCase() + button.dataset.mode!.slice(1)}</span>`; });
+  document.getElementById("nav-search")!.innerHTML = `${icon("magnifying-glass", "Search")}<span>Search</span>`;
+  document.querySelectorAll<HTMLButtonElement>("#modeSeg button").forEach((button) => { const name = button.dataset.mode === "inspect" ? "eye" : button.dataset.mode === "present" ? "presentation" : "play"; const label = button.dataset.mode![0].toUpperCase() + button.dataset.mode!.slice(1); button.innerHTML = `${icon(name, label)}<span>${label}</span>`; });
 }
 
 /* ---------- deep links: state ⇄ location.hash ---------- */
 export function hashOf(): string {
   if (state.level === "map") return "#map";
   const p = ["#f", state.feature]; if (state.story) p.push("s", state.story); if (state.mode === "present" || state.mode === "play") p.push(state.mode, String(state.step));
-  if (state.selected && "id" in state.selected) p.push("sel", encodeURIComponent(state.selected.id));
+  if (state.selected) p.push("sel", encodeURIComponent("edges" in state.selected ? `edge:${state.selected.source}>${state.selected.target}` : state.selected.id));
   return p.join("/");
 }
 export function applyHash(): boolean {
   const h = location.hash.slice(1); if (!h || h === "map") { state.level = "map"; state.selected = null; return true; }
   const p = h.split("/"); if (p[0] !== "f" || !featById[p[1]]) return false;
   state.level = "feature"; state.feature = p[1]; state.story = null; state.mode = "inspect"; state.step = 0; state.selected = null;
-  for (let i = 2; i < p.length; i += 2) { if (p[i] === "s") state.story = p[i + 1]; if (p[i] === "present" || p[i] === "play") { state.mode = p[i] === "play" ? "play" : "present"; state.step = +p[i + 1] || 0; } if (p[i] === "sel") { const s = byId.get(decodeURIComponent(p[i + 1])); if (s) state.selected = s; } }
+  for (let i = 2; i < p.length; i += 2) { if (p[i] === "s") state.story = p[i + 1]; if (p[i] === "present" || p[i] === "play") { state.mode = p[i] === "play" ? "play" : "present"; state.step = +p[i + 1] || 0; } if (p[i] === "sel") { const selected = decodeURIComponent(p[i + 1]); const s = byId.get(selected); if (s) state.selected = s; else if (selected.startsWith("edge:")) { const [source, target] = selected.slice(5).split(">"); const edges = D.graph.edges.filter((edge) => edge.source === source && edge.target === target); if (edges.length) state.selected = { source, target, edges, primary: edges[0], confidence: edges[0].confidence, missing: false } satisfies Bundle; } } }
   return true;
 }
 

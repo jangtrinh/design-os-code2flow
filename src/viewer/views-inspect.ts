@@ -17,7 +17,7 @@ export function renderInspect(view: SVGGElement, h: InspectHandlers): { scope: s
   const scope = story ? frameIds.filter((id) => storyFrames!.has(id)) : frameIds;
   const { bundles, stubs, stats } = deriveFrameEdges(scope, "inspect");
   const g = new dagre.graphlib.Graph({ multigraph: true }); g.setGraph({ rankdir: "LR", nodesep: 40, ranksep: 160, marginx: 60, marginy: 60 }); g.setDefaultEdgeLabel(() => ({}));
-  const expanded = story ? new Set(scope) : new Set<string>();
+  const expanded = new Set(scope); // State Screens are always visible beside their parent Route Screen.
   type Size = { w: number; h: number; kids: { id: string }[]; cols: number; rows: number[]; base: { w: number; h: number } };
   const size = (id: string): Size => {
     const base = frameDims(id, false);
@@ -41,7 +41,7 @@ export function renderInspect(view: SVGGElement, h: InspectHandlers): { scope: s
   bundles.forEach((b) => drawBundle(eg, b, pos, h.onSelectBundle));
   for (const id of scope) {
     const p = pos[id]; if (!p) continue;
-    const node = frameNode(id, p.x, p.y, { stats: stats.get(id), badge: unl.includes(id) ? "unlinked" : storiesOf(id).length > 1 ? `in ${storiesOf(id).length} stories` : null, cls: state.selected && "id" in state.selected && state.selected.id === id ? "selected" : "" }, h.onSelect, h.onOpenStory);
+    const node = frameNode(id, p.x, p.y, { stats: stats.get(id), badge: unl.includes(id) ? "unlinked" : null, cls: state.selected && "id" in state.selected && state.selected.id === id ? "selected" : "" }, h.onSelect, h.onOpenStory);
     if (expanded.has(id)) { const sz = sizes[id]; let yy = sz.base.h + 12; sz.kids.forEach((k, i) => { const c = i % sz.cols, r = Math.floor(i / sz.cols); if (c === 0 && i > 0) yy += sz.rows[r - 1] + 12; node.append(frameNode(k.id, 20 + c * (SW + 20), yy, { w: SW, preferDialog: true }, h.onSelect, h.onOpenStory)); }); node.querySelector("rect.bg")!.setAttribute("height", String(p.h)); }
     ng.append(node);
   }

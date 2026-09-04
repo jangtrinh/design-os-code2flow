@@ -1,5 +1,5 @@
 import { iconHtml } from "./icons.js";
-const CHEVRON = iconHtml("caret-down");
+const CHEVRON = iconHtml("caret-down", "Open options");
 let dropdownId = 0;
 
 export interface DropdownOption { id: string; label: string }
@@ -15,7 +15,7 @@ export function createDropdown(label: string, options: DropdownOption[], selecte
   const menu = document.createElement("div"); menu.className = "crumb-menu"; menu.id = menuId; menu.hidden = true; menu.setAttribute("role", "listbox"); menu.setAttribute("aria-label", label);
   const rows = options.map((option) => {
     const row = document.createElement("button"); row.type = "button"; row.className = "crumb-option"; row.setAttribute("role", "option"); row.setAttribute("aria-selected", String(option.id === selected)); row.dataset.id = option.id;
-    row.innerHTML = `<span class="crumb-check" aria-hidden="true">${option.id === selected ? iconHtml("check") : ""}</span><span>${option.label}</span>`;
+    row.innerHTML = `<span class="crumb-check" aria-hidden="true">${option.id === selected ? iconHtml("check", "Selected") : ""}</span><span>${option.label}</span>`;
     row.addEventListener("click", () => { close(); choose(option.id); }); menu.append(row); return row;
   });
   let open = false;

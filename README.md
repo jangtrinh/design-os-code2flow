@@ -1,49 +1,76 @@
 # Code2Flow
 
-A local CLI that turns a web codebase into a living user-flow canvas: every screen (route, modal, drawer, tab, wizard step) is a real screenshot, every arrow is an action found in the code with `file:line` evidence and a confidence tier. Nothing leaves your machine.
+Turn a web codebase into a local, evidence-backed Flow Canvas your product team can explore. Every screen is a real screenshot, every arrow is an action found in the code with `file:line` evidence and a confidence tier. Nothing leaves your machine.
 
-Supported today: Next.js App Router, React Router (v6/v7), static HTML folders. See [docs/adapters.md](docs/adapters.md).
+Supported today: Next.js App Router, React Router (v6/v7), static HTML folders — see [adapters](docs/adapters.md).
 
-## Install (for a PO or a teammate)
+![Flow canvas](https://raw.githubusercontent.com/jangtrinh/design-os-code2flow/main/docs/assets/feature-inspect.png)
 
-Requirements: Node 20+, Google Chrome installed (Playwright drives it; nothing is downloaded), and the target app's own dev server.
-
-```bash
-npm i -g design-os-code2flow                 # from npm (bin `code2flow`); or a release tarball
-code2flow --help
-```
-
-From source: `git clone … && cd code2flow && npm i && npm run build && npm link`.
-
-## Use
+## Install
 
 ```bash
-npx code2flow init     /path/to/repo         # config + .gitignore + AGENTS.md section (idempotent)
-npx code2flow run      /path/to/repo         # dev server → scan → snapshot → validate → lint → export → server stopped
-npx code2flow scan     /path/to/repo         # → /path/to/repo/.code2flow/graph.json
-npx code2flow snapshot /path/to/repo --url http://127.0.0.1:3000   # screenshots against your dev server
-npx code2flow serve    /path/to/repo         # http://127.0.0.1:4317
-npx code2flow export   /path/to/repo         # one self-contained HTML, opens offline
-npx code2flow render   /path/to/repo         # PNG per view + one PDF, for hand-outs
+npm i -g design-os-code2flow
+code2flow
 ```
 
-Optional: `login` (sign in once, reused by `snapshot`), `stories scaffold|validate` (user-story lanes from a PRD), `paths` (how users get from A to B, with evidence), `lint` and `diff` (CI).
+Node 20+, Google Chrome, and the target app's development server are required.
 
-For agents: skills `code2flow-map-codebase`, `code2flow-answer-flow-questions`, `code2flow-stories-from-prd` in `.claude/skills/` (also shipped inside the package: `node_modules/design-os-code2flow/.claude/skills/` — copy them into your repo's `.claude/skills/`).
+## Quick start
 
+```bash
+code2flow init  /path/to/your-app    # config, .gitignore, AGENTS.md section, agent skills
+code2flow run   /path/to/your-app    # dev server → scan → screenshots → lint → offline export
+code2flow serve /path/to/your-app    # http://127.0.0.1:4317
+```
+
+![Terminal run](https://raw.githubusercontent.com/jangtrinh/design-os-code2flow/main/docs/assets/terminal-run.gif)
+
+Start with the **[user guide](docs/user-guide.md)** — install to hand-outs, step by step.
+
+## What you get
+
+**See the product map first.** Features and the transitions between them, before any single flow.
+
+![Product map](https://raw.githubusercontent.com/jangtrinh/design-os-code2flow/main/docs/assets/product-map.png)
+
+**Inspect what the code found.** Click a screen or an edge pill: trigger, target, confidence, `file:line` evidence.
+
+![Inspector panel](https://raw.githubusercontent.com/jangtrinh/design-os-code2flow/main/docs/assets/inspector-edge.png)
+
+**Recognize UI states.** Modals, tabs, drawers, dropdowns and hover overlays are frames of their own, on a tinted container next to their page.
+
+![State Screens](https://raw.githubusercontent.com/jangtrinh/design-os-code2flow/main/docs/assets/state-frames.png)
+
+**Present one story at a time.** A clean lane per story, keyboard stepping, both sidebars out of the way.
+
+![Present lane](https://raw.githubusercontent.com/jangtrinh/design-os-code2flow/main/docs/assets/present-lane.png)
+
+**Play every step as a gallery.** All screenshots of a story in order; click any card to make it current.
+
+![Play gallery](https://raw.githubusercontent.com/jangtrinh/design-os-code2flow/main/docs/assets/play-gallery.png)
+
+**Keep the legend close.** The left rail holds features, stories and the arrow legend; every canvas icon explains itself on hover.
+
+![Rail legend](https://raw.githubusercontent.com/jangtrinh/design-os-code2flow/main/docs/assets/rail-legend.png)
+
+## Docs
+
+- [User guide](docs/user-guide.md)
 - [Getting started](docs/getting-started.md)
 - [Configuration reference](docs/config-reference.md) — `code2flow.config.json`, `code2flow.stories.json`
+- [Ingestor adapters](docs/adapters.md)
 - [Confidence tiers and capture policy](docs/confidence-and-capture.md)
 - Decisions: [docs/adr/](docs/adr/)
 
-Add `.code2flow/` to the target repo's `.gitignore`.
+For agents: skills `code2flow-map-codebase`, `code2flow-answer-flow-questions`, `code2flow-stories-from-prd` ship in the package and are copied into your repo by `code2flow init`.
 
 ## Develop
 
 ```bash
 npm run cli -- scan fixtures/synthetic/app-router-basic   # run from source (tsx)
-npx tsc --noEmit && npx vitest run                          # 11 files; two drive the installed Chrome
+npx tsc --noEmit && npx vitest run                          # browser tests drive the installed Chrome
 npm run recall                                              # parser vs hand-labelled ground truth
+npm run audit:design                                        # design:os floors on a fixture export
 ```
 
 Layout: `src/parser` (adapters → CanonicalFlowGraph), `src/snapshot` (Playwright capture), `src/lint`, `src/viewer` (vanilla TS + SVG), all sharing only `src/schema`.

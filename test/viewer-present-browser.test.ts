@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { exportCommand } from "../src/cli/export-command.js";
@@ -18,9 +18,9 @@ const MANIFEST = { version: 2, features: [{ id: "shop", title: "Shop", match: ["
 ] };
 
 type Page = { goto(u: string, o: Record<string, unknown>): Promise<unknown>; waitForTimeout(ms: number): Promise<void>; evaluate<T>(src: string): Promise<T>; on(ev: string, cb: (e: { message?: string; type?: () => string; text?: () => string }) => void): void; keyboard: { press(k: string): Promise<void> } };
-let html: string; let browser: Awaited<ReturnType<typeof launchBrowser>>; let page: Page; const errors: string[] = [];
+let html: string; let viewerDir: string; let browser: Awaited<ReturnType<typeof launchBrowser>>; let page: Page; const errors: string[] = [];
 beforeAll(async () => {
-  const viewerDir = await buildViewer();
+  viewerDir = await buildViewer();
   await scanCommand(FIXTURE, () => {});
   mkdirSync(join(DATA, "shots"), { recursive: true }); writeFileSync(shotFiles(join(DATA, "shots"), "/").full, JPEG);
   writeFileSync(join(DATA, "shots-meta.json"), JSON.stringify({ "/": { url: "/", width: 1440, height: 900 } }));
@@ -86,14 +86,89 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     expect(await text("#view")).toContain("Not in code · 1");
     expect(errors).toEqual([]);
   });
-  it("play mode shows the current image and one thumbnail per story step", async () => {
+  it("hides the presenter HUD after leaving Present", async () => {
+    await open("#f/shop/s/buy/present/1");
+    expect(await page.evaluate<boolean>(`document.querySelector('#phud').hidden`)).toBe(false);
+    await open("#f/shop/s/buy");
+    expect(await page.evaluate<boolean>(`document.querySelector('#phud').hidden`)).toBe(true);
     await open("#f/shop/s/buy/play/0");
-    expect(await count("#player .player-current img")).toBe(1);
-    expect(await count("#player .player-thumb")).toBe(4);
+    expect(await page.evaluate<boolean>(`document.querySelector('#phud').hidden`)).toBe(true);
+  });
+  it("play mode renders every step as a gallery card and card three becomes current", async () => {
+    await open("#f/shop/s/buy/play/0");
+    expect(await count("#player .player-card")).toBe(4);
+    expect(await count("#player .player-card .player-step-chip")).toBe(4);
+    expect(await page.evaluate<{ columns: string; x: string; y: string }>(`(() => { const style = getComputedStyle(document.querySelector('.player-gallery')); return { columns: style.gridTemplateColumns, x: style.overflowX, y: style.overflowY }; })()`)).toEqual(expect.objectContaining({ x: "hidden", y: "auto" }));
+    await page.evaluate<void>(`[...document.querySelectorAll('#player .player-card')][2].dispatchEvent(new MouseEvent('click', { bubbles: true }))`);
+    await page.waitForTimeout(200);
+    expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/2");
+    expect(await page.evaluate<number>(`[...document.querySelectorAll('#player .player-card')].findIndex((card) => card.classList.contains('on'))`)).toBe(2);
+  });
+  it("removes the Play panel action row", async () => {
+    await open("#f/shop/s/buy/play/0");
+    expect(await count("#player .player-actions")).toBe(0);
+    await page.evaluate<void>(`[...document.querySelectorAll('#player .player-thumb')][1].dispatchEvent(new MouseEvent('click', { bubbles: true }))`);
+    await page.waitForTimeout(200);
+    expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/1");
+  });
+  it("removes the duplicate toolbar back control while retaining breadcrumbs", async () => {
+    await open("#f/shop");
+    expect(await count("#toolbar-left #nav-back")).toBe(0);
+    expect(await count("#toolbar-left .crumb")).toBe(1);
   });
   it("play mode advances with ArrowRight and writes its hash", async () => {
     await open("#f/shop/s/buy/play/0");
     await page.keyboard.press("ArrowRight"); await page.waitForTimeout(200);
     expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/1");
+  });
+  it("keeps rendered icons named and makes a bundled edge pill open its evidence inspector", async () => {
+    await open("#f/shop");
+    expect(await page.evaluate<string[]>(`[...document.querySelectorAll('svg')].filter((svg) => !svg.querySelector('title')).map((svg) => svg.outerHTML.slice(0, 80))`)).toEqual([]);
+    await (page as unknown as { click(selector: string): Promise<void> }).click(".edge-pill"); await page.waitForTimeout(300); // a real pointer click: the canvas drag handler must not swallow it
+    expect(await count('#drawer.open .inspector-row')).toBeGreaterThan(0);
+    expect(await page.evaluate<string>("location.hash")).toContain("sel/edge%3A");
+  });
+  it("removes the HUD and delegates keyboard zoom and fit after a hash redraw", async () => {
+    await open("#f/shop");
+    expect(await count("#hud")).toBe(0);
+    await page.keyboard.press("+");
+    const beforeFit = await page.evaluate<string>(`document.querySelector('#view')?.getAttribute('transform') ?? ''`);
+    await page.keyboard.press("F");
+    expect(await page.evaluate<string>(`document.querySelector('#view')?.getAttribute('transform') ?? ''`)).not.toBe(beforeFit);
+    await page.keyboard.press("-");
+  });
+  it("makes Present canvas-only without changing selection from a frame click", async () => {
+    await open("#f/shop");
+    await page.evaluate<void>(`document.querySelector('.frame')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))`);
+    expect(await page.evaluate<boolean>(`document.querySelector('#drawer')?.classList.contains('open') ?? false`)).toBe(true);
+    await page.evaluate<void>(`document.querySelector('#modeSeg [data-mode="present"]')?.click()`);
+    const before = await page.evaluate<string>(`location.hash`);
+    expect(await page.evaluate<string>(`getComputedStyle(document.querySelector('#rail')).display`)).toBe("none");
+    expect(await page.evaluate<string>(`getComputedStyle(document.querySelector('#drawer')).display`)).toBe("none");
+    await page.evaluate<void>(`document.querySelector('.frame')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))`);
+    expect(await page.evaluate<string>(`location.hash`)).toBe(before);
+    expect(await page.evaluate<boolean>(`document.querySelector('#drawer')?.classList.contains('open') ?? false`)).toBe(true);
+    await page.evaluate<void>(`document.querySelector('#modeSeg [data-mode="inspect"]')?.click()`);
+    expect(await page.evaluate<string>(`getComputedStyle(document.querySelector('#rail')).display`)).not.toBe("none");
+    expect(await page.evaluate<string>(`getComputedStyle(document.querySelector('#drawer')).display`)).not.toBe("none");
+  });
+  it("keeps route slugs out of canvas text and frame chrome outside screenshot bounds", async () => {
+    await open("#f/shop/s/buy/present/1");
+    expect(await page.evaluate<string[]>(`[...document.querySelectorAll('#svg text')].map((node) => node.textContent?.trim() ?? '').filter((value) => value.startsWith('/'))`)).toEqual([]);
+    expect(await page.evaluate<string[]>(`(() => {
+      const intersects = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+      return [...document.querySelectorAll('#view .frame')].flatMap((frame) => {
+        const image = frame.querySelector('image'); if (!image) return [];
+        const shot = image.getBoundingClientRect();
+        return [...frame.querySelectorAll('.header-chip, .frame-footer')].filter((chip) => intersects(shot, chip.getBoundingClientRect())).map((chip) => frame.dataset.node + ':' + chip.getAttribute('class'));
+      });
+    })()`)).toEqual([]);
+  });
+  it("keeps compact generic labels out of built viewer string literals and records icon title coverage", async () => {
+    const viewer = readFileSync(join(viewerDir, "viewer.js"), "utf8");
+    expect(viewer.match(/(?:textContent|innerHTML)\s*=\s*["'](?:Kind|File|URL|Out|In|Sidebar|states|stories|flows|missing)["']/gi) ?? []).toEqual([]);
+    await open("#f/shop");
+    const counts = await page.evaluate<{ icons: number; titles: number }>(`(() => { const icons = [...document.querySelectorAll('svg')].filter((svg) => [...svg.children].some((child) => child.localName === 'title')); return { icons: icons.length, titles: document.querySelectorAll('svg > title').length }; })()`);
+    expect(counts).toEqual({ icons: 43, titles: 43 });
   });
 });

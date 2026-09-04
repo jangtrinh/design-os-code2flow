@@ -51,7 +51,8 @@ export async function runSnapshot(rootDir: string, graph: CanonicalFlowGraph, sa
           while (jobs.length) {
             const [id, url, attempt] = jobs.shift()!;
             try {
-              const r = await captureContentFit(page, opts.serverUrl.replace(/\/$/, ""), url, shotFiles(shotsDir, id), config.capture);
+              const screen = graph.screens.find((candidate) => candidate.id === id);
+              const r = await captureContentFit(page, opts.serverUrl.replace(/\/$/, ""), url, shotFiles(shotsDir, id), config.capture, screen?.hoverTriggerSelector);
               meta[id] = r; done.add(id);
               if (r.clippedAtCap) { capped.push(id); bump(counters, "snapshot", "capture-capped"); }
               const landed = graph.screens.find((s) => s.kind === "route" && routeMatches(s.id, r.finalPath))?.id;

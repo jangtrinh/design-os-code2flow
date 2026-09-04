@@ -8,6 +8,7 @@ export function startStaticApp(): Promise<{ server: Server; url: string }> {
     res.setHeader("content-type", "text/html");
     if (u.pathname === "/") return res.end(page("Home", '<a href="/blog/first-post">First post</a> <a href="/blog/second-post">Second post</a>'));
     if (u.pathname === "/orders") { const d = u.searchParams.get("drawer") === "details" ? '<div role="dialog" aria-labelledby="dt" style="position:fixed;top:100px;left:400px;width:420px;height:200px;background:#fff;border:1px solid #000"><h2 id="dt">Order details</h2><p>Line items</p></div>' : ""; return res.end(page("Orders", '<div role="tablist"><button role="tab" aria-selected="true">Open</button></div>', true, d)); }
+    if (u.pathname === "/hover") return res.end(page("Hover", '<button data-testid="help-tip">Help</button><div id="tip" role="tooltip" hidden>Help text</div><script>document.querySelector("[data-testid=help-tip]").addEventListener("mouseenter",()=>{document.getElementById("tip").hidden=false})</script>'));
     if (u.pathname.startsWith("/blog/")) return res.end(page("Post " + u.pathname.split("/")[2], "<p>post body</p>"));
     if (u.pathname === "/pricing") return res.end(page("Pricing plans", `<p>plans</p><div id="late"></div><script>setTimeout(() => { document.getElementById("late").innerHTML = '<div style="height:900px">late block</div><p id="late-end">late end</p>'; }, 900);</script>`));
     res.statusCode = 404; res.end(page("Not found", ""));

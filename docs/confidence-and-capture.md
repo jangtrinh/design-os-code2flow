@@ -4,12 +4,14 @@
 
 - **Route Screen**: every `page.tsx` under `app/`; `[id]` and `[...rest]` are one screen each; `(group)` folders are transparent; `api/`, `@slot` and `_private` folders are skipped.
 - **State Screen**: a modal, drawer, tab or wizard step nested under a route. Detected from (a) query params the page reads (`?modal=`, `?drawer=`, `?tab=`, `?step=`, `?filter=open`) compared to literals or used to render a component, (b) `Dialog | Sheet | Drawer` components toggled by a `useState` boolean, (c) `Tabs` value changes, (d) intercepting routes (`@modal/(.)…`, planned), (e) a one-hop derived alias of a searchParams key (`const activeTab = tabs.includes(tab as …) ? tab as … : "overview"`) compared with `===`/`==` anywhere in the page, (f) every literal in the array behind that alias's `.includes()` membership check, even without its own equality comparison.
+- **Hover State Screen**: a tooltip, hover card/popover, or hover-opened dropdown nested under its route. Literal `onMouseEnter` and Radix-style trigger/content pairs are high-confidence only when a literal trigger selector is available; CSS-only reveals are counted, not inferred as transitions.
 
 ## Transition Confidence (ADR-0005)
 
 | Tier | How the target was found | Drawn as |
 |---|---|---|
 | **high** | literal `<Link href>`, `<a href>`, `<form action>`, `router.push("/x")`, `redirect("/x")`, `notFound()` | solid ink, 2 px |
+| **high pattern** | literal `onMouseEnter`, or `Tooltip`/`HoverCard`/`DropdownMenu` with a literal trigger selector | solid ink, 2 px |
 | **medium** | one hop away from a literal: a constant, an imported constant, a template with a static prefix (`` `${BASE}?tab=roles` ``), a prop passed through one component, a `*Href` helper with a literal patch object, a string literal inside a data array, a `useState`-toggled overlay, a `URLSearchParams.set("step", "x")` inside an href builder | solid grey |
 | **medium pattern** | `link-href-data-module` reads one imported literal data array. | solid grey |
 | **medium pattern** | `prop-href-data-module` and `prop-object-href-data-module` follow one passed href or object prop through a local Link wrapper into imported static data. | solid grey |
@@ -26,12 +28,13 @@ Shell navigation is sourced from (a) any component rendered by ≥50% of Route S
 
 ## Nothing vanishes silently
 
-Anything the parser saw but did not emit is a per-file counter in `graph.json`: `normalizations` (redirect to the same route), `anchor-hash`, `unresolved-expression`, `candidate-breadth-limit`, `merged-identical-edge`, `merged-prop-href-duplicate`, `setter-without-overlay`, `needs-sample`, and from capture: `capture-failed`, `no-url`, `login-redirect`, `capture-capped`. A re-`scan` keeps the last snapshot's counters (its shots still exist). `code2flow lint` turns the ones a person should act on into findings.
+Anything the parser saw but did not emit is a per-file counter in `graph.json`: `normalizations` (redirect to the same route), `anchor-hash`, `unresolved-expression`, `candidate-breadth-limit`, `merged-identical-edge`, `merged-prop-href-duplicate`, `setter-without-overlay`, `hover-trigger-unresolved`, `needs-sample`, and from capture: `capture-failed`, `no-url`, `login-redirect`, `capture-capped`. A re-`scan` keeps the last snapshot's counters (its shots still exist). `code2flow lint` turns the ones a person should act on into findings.
 
 ## Capture policy (ADR-0007)
 
 - Base viewport 1440 × 900. App-shell layouts keep the document at viewport height and scroll inside `<main>`, so `fullPage` screenshots are useless; instead the viewport is grown in both axes until no inner scroller is clipped (caps 2200 × 10000, configurable).
 - Before measuring, the page must settle: bounded network idle (8 s), fonts and images loaded, a scroll sweep through every scroller so lazy content mounts, and two identical layout measurements 400 ms apart with at least 1 s elapsed. The sweep repeats after each growth step.
+- For a Hover State Screen, capture opens the parent route, calls `page.hover()` with the State Screen's stored trigger selector, and waits for a visible tooltip, menu, or open-state overlay before measuring and shooting. A missing selector is counted by parsing and is never guessed at capture time.
 - JPEG quality 65 (≈ 60–160 KB per screen), stored as `shots/<sha1(id)[0:16]>.jpg` so the pairing screen ↔ image survives any re-scan. State Screens also get a crop of their `[role=dialog]`.
 - A page that needs more than the cap is captured up to the cap, counted (`capture-capped`) and flagged in `shots-meta.json` (`clippedAtCap`).
 - Titles are read from the page: `h1` inside `<main>`, the dialog's `aria-labelledby` or first heading, the selected tab.

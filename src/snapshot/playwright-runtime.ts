@@ -11,6 +11,8 @@ export interface PageLike {
   goto(url: string, opts: Record<string, unknown>): Promise<unknown>;
   waitForLoadState(state: string, opts?: Record<string, unknown>): Promise<void>;
   waitForTimeout(ms: number): Promise<void>;
+  hover(selector: string, opts?: Record<string, unknown>): Promise<void>;
+  waitForSelector(selector: string, opts?: Record<string, unknown>): Promise<unknown>;
   setViewportSize(size: { width: number; height: number }): Promise<void>;
   evaluate<T>(source: string): Promise<T>;
   screenshot(opts: Record<string, unknown>): Promise<unknown>;

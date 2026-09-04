@@ -37,3 +37,13 @@ Catch-all routes intentionally do not resolve ordinary unmatched literal links: 
 `missing:` targets so lint keeps reporting broken links. The adapter does not prove runtime
 route ownership through arbitrary component composition, computed navigation, hash routers,
 or every possible `useSearchParams` data flow.
+
+## Hover states
+
+The Next.js App Router adapter emits a nested State Screen for literal Radix-style
+`Tooltip`, `HoverCard`, and `DropdownMenu` trigger/content pairs, and for a literal
+`onMouseEnter` overlay. Its id is `<route>#hover-<kind>-<trigger-slug>` and its Action
+Edge has `triggerKind: "hover"`; `tooltip`, `popover`, and `dropdown` retain their
+distinct Screen Node kinds. Capture needs a literal `data-testid` or `id` on the trigger
+to replay the hover. CSS-only `:hover` reveals and literals without that selector become
+`hover-trigger-unresolved` counters rather than speculative edges.

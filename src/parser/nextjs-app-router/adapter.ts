@@ -9,6 +9,7 @@ import type { ParsedFile } from "./parse-source-file.js";
 import { extractNavigationCalls } from "./extract-navigation-calls.js";
 import { buildRouteRegistry } from "./route-registry.js";
 import { buildScreenIndex, type ScreenIndex } from "./screen-index.js";
+import { extractHoverStateScreens } from "./hover-state-screens.js";
 
 /** Two passes: index every screen (state keys, titles, route-as-modal), then edges + shell navigation. */
 async function ingestNextApp(rootDir: string, detected: DetectedFramework): Promise<IngestResult> {
@@ -33,6 +34,9 @@ async function ingestNextApp(rootDir: string, detected: DetectedFramework): Prom
   for (const index of indexes) {
     const calls = index.files.flatMap((parsed) => extractNavigationCalls(parsed));
     edges.push(...buildScreenEdges(index, calls, { rootDir, registry, counters, stateScreens, stateKeysByRoute, seq }));
+    const hover = extractHoverStateScreens(index, counters);
+    for (const state of hover.states) stateScreens.set(state.id, state);
+    for (const edge of hover.edges) edges.push({ ...edge, id: `e${++seq.n}` });
   }
   edges.push(...detectShellNavigation(rootDir, detected.appDir, pages, registry, counters));
   const screens = [...registry.screens, ...[...stateScreens.values()].sort((a, b) => a.id.localeCompare(b.id))];

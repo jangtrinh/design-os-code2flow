@@ -16,12 +16,16 @@ export function drawBundle(g: SVGGElement, b: Bundle, pos: Record<string, Pos>, 
   const p = el("path", { d, class: cls, "marker-end": "url(#arrow)" }); const hit = el("path", { d, class: "hit" });
   hit.addEventListener("click", (ev) => { ev.stopPropagation(); onSelect(b); });
   g.append(p, hit);
-  if (!ret && !opts.faded) pill(g, (x1 + x2) / 2, (y1 + y2) / 2, b);
+  if (!ret && !opts.faded) pill(g, (x1 + x2) / 2, (y1 + y2) / 2, b, onSelect);
 }
 
-export function pill(g: SVGGElement, mx: number, my: number, b: Bundle): void {
-  const label = (b.primary.trigger.length > 24 ? b.primary.trigger.slice(0, 23) + "…" : b.primary.trigger) + (b.edges.length > 1 ? `  +${b.edges.length - 1}` : "");
-  const warn = b.confidence === "low"; const w = label.length * 6 + (warn ? 30 : 16); const pg = uiScale("ui-scale center", mx - w / 2, my - 10);
-  pg.append(el("rect", { x: 0, y: 0, width: w, height: 20, class: "pill-bg " + b.confidence })); if (warn) pg.append(iconSvg("warning", 5, 4, 12)); pg.append(el("text", { x: warn ? 21 : w / 2, y: 14, "text-anchor": warn ? "start" : "middle", class: "pill" }, label));
+export function pill(g: SVGGElement, mx: number, my: number, b: Bundle, onSelect?: (bundle: Bundle) => void): void {
+  const trigger = b.primary.trigger.length > 24 ? b.primary.trigger.slice(0, 23) + "…" : b.primary.trigger;
+  const label = `${trigger} ${b.edges.length}`; const title = `${b.primary.trigger} · ${b.edges.length} links`;
+  const warn = b.confidence === "low"; const w = label.length * 6 + (warn ? 30 : 16); const pg = uiScale("ui-scale center edge-pill", mx - w / 2, my - 10);
+  pg.setAttribute("tabindex", "0"); pg.setAttribute("role", "button"); pg.setAttribute("aria-label", title); pg.setAttribute("title", title);
+  pg.append(el("rect", { x: 0, y: 0, width: w, height: 20, class: "pill-bg " + b.confidence })); if (warn) pg.append(iconSvg("warning", "Review confidence", 5, 4, 12)); pg.append(el("text", { x: warn ? 21 : w / 2, y: 14, "text-anchor": warn ? "start" : "middle", class: "pill" }, label));
+  const select = (event: Event): void => { event.stopPropagation(); onSelect?.(b); };
+  pg.addEventListener("click", select); pg.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") select(event); });
   g.append(pg);
 }

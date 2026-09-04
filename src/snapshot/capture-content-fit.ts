@@ -82,10 +82,14 @@ async function settle(page: PageLike, quick = false): Promise<void> {
  * Opens one URL, grows the viewport in both axes until nothing is clipped (bounded by caps),
  * screenshots the page (JPEG) and the `[role=dialog]` element when present, and reads real titles.
  */
-export async function captureContentFit(page: PageLike, base: string, url: string, out: { full: string; dialog: string }, cfg: CaptureConfig): Promise<CaptureResult> {
+export async function captureContentFit(page: PageLike, base: string, url: string, out: { full: string; dialog: string }, cfg: CaptureConfig, hoverTriggerSelector?: string): Promise<CaptureResult> {
   await page.setViewportSize({ width: cfg.baseWidth, height: cfg.baseHeight });
   await page.goto(base + url, { waitUntil: "load", timeout: 60000 });
   await settle(page);
+  if (hoverTriggerSelector) {
+    await page.hover(hoverTriggerSelector, { timeout: 5_000 });
+    await page.waitForSelector('[role="tooltip"], [role="menu"], [data-state="open"]', { state: "visible", timeout: 5_000 });
+  }
   let vw = cfg.baseWidth, vh = cfg.baseHeight, clippedAtCap = false;
   for (let i = 0; i < 4; i++) {
     const { needH, needW } = await page.evaluate<Measured>(MEASURE_NEEDED_JS);

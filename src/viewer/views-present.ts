@@ -3,6 +3,7 @@ import { laneBundles } from "./edge-pipeline.js";
 import { pill, type Pos } from "./edges-draw.js";
 import { frameNode, stubNode, type OpenStoryFn, type SelectFn } from "./frame-node.js";
 import { el, frameDims, uiScale } from "./svg.js";
+import { iconHtml, iconSvg } from "./icons.js";
 import type { Bundle, Story, StoryStep } from "./types.js";
 
 export interface PresentHandlers { onSelect: SelectFn; onSelectBundle: (b: Bundle) => void; onOpenStory: OpenStoryFn; onStep: (storyId: string, step: number) => void; onToggleTray: () => void }
@@ -44,8 +45,9 @@ export function renderLanes(view: SVGGElement, h: PresentHandlers): { story: Sto
     const laneH = height + 60 + PAD + 30 + (active ? 40 : 0); const laneW = width + 2 * PAD;
     const lane = el("g"); lane.append(el("rect", { x: 20, y, width: laneW, height: laneH, rx: 16, class: "lane" }));
     const lt = uiScale("ui-scale", 44, y + 14); lt.append(el("text", { x: 0, y: 14, class: "lane-title" }, story.title)); lane.append(lt);
-    const metaText = `${story.screens.length} screens · entry ${story.entry}${story.branches?.length ? ` · ${story.branches.length} branch${story.branches.length > 1 ? "es" : ""}` : ""}${story.source ? " · " + story.source : ""}${missing.length ? ` · ${missing.length} not in code: ${missing.join(", ")}` : ""}`;
-    lane.append(el("text", { x: 44, y: y + 46, class: "lane-meta", style: missing.length ? "fill:var(--bad)" : "" }, metaText));
+    const meta = uiScale("ui-scale", 44, y + 34); let metaX = 0;
+    const metaChip = (icon: Parameters<typeof iconSvg>[0], label: string, count?: number, bad = false): void => { meta.append(iconSvg(icon, label, metaX, 0, 14), ...(count === undefined ? [] : [el("text", { x: metaX + 18, y: 11, class: "lane-meta", style: bad ? "fill:var(--bad)" : "" }, String(count))])); metaX += count === undefined ? 22 : 34; };
+    metaChip("stack", "Screens", story.screens.length); metaChip("sign-in", "Entry"); if (story.branches?.length) metaChip("git-branch", "Branches", story.branches.length); if (missing.length) metaChip("warning", "Missing screens", missing.length, true); lane.append(meta);
     const eg = el("g"), ng = el("g");
     const edge = (P: Pos, Q: Pos, b: Bundle | null, via: string | undefined, faded: boolean, down: boolean): void => {
       const d = down ? `M${P.x + P.w / 2},${P.y + P.h} C${P.x + P.w / 2},${Q.y - 30} ${Q.x - 40},${Q.y + 20} ${Q.x},${Q.y + 20}` : `M${P.x + P.w},${P.y + 24} C${P.x + P.w + 60},${P.y + 24} ${Q.x - 60},${Q.y + 24} ${Q.x},${Q.y + 24}`;
@@ -60,8 +62,7 @@ export function renderLanes(view: SVGGElement, h: PresentHandlers): { story: Sto
       if (row.title) { const bt = uiScale("ui-scale", row.x0, row.y - 22); bt.append(el("text", { x: 0, y: 12, class: "lane-meta" }, `↳ ${row.title}`)); ng.append(bt); }
       row.steps.forEach((s, i) => {
         const P = pos[row.key + ":" + s.screen]; const id = s.screen; const isStep = row.key === "main" && active && i === state.step;
-        const others = fs.filter((o) => o.id !== story.id && o.screens.includes(id)).length;
-        const badge = [id === story.entry && row.key === "main" ? "entry" : "", exits.has(id) ? "exit" : "", others ? `also in ${others} ${others > 1 ? "stories" : "story"}` : ""].filter(Boolean).join(" · ") || null;
+        const badge = [id === story.entry && row.key === "main" ? "entry" : "", exits.has(id) ? "exit" : ""].filter(Boolean).join(" · ") || null;
         const cls = (isStep ? "step" : "") + (active && stepId && !isStep ? " faded" : "") + (!active ? " faded" : "");
         const node = byId.has(id) ? frameNode(id, P.x, P.y, { preferDialog: true, badge, cls }, h.onSelect, h.onOpenStory) : stubNode(missingStub(id), P.x, P.y, () => {});
         if (!byId.has(id)) node.classList.add(...cls.split(" ").filter(Boolean));
@@ -99,9 +100,9 @@ export function presenterHud(hud: HTMLElement, story: Story, stepId: string, onS
   const path = storyPath(story); const cur = byId.get(stepId); const via = path[state.step]?.via;
   const inb = D.graph.edges.filter((e) => e.scope === "screen" && e.target === stepId && story.screens.includes(e.source)).sort((a, b) => ({ high: 3, medium: 2, low: 1 }[b.confidence] - { high: 3, medium: 2, low: 1 }[a.confidence]))[0];
   const title = !cur ? "Missing screen" : cur.kind === "route" ? routeTitle(cur.id) : realTitle(cur.id);
-  const btn = (id: string, label: string, d: string): string => `<button id="${id}" class="icon-btn" aria-label="${label}"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg></button>`;
+  const btn = (id: string, label: string, icon: Parameters<typeof iconHtml>[0]): string => `<button id="${id}" class="icon-btn" aria-label="${label}" title="${label}">${iconHtml(icon, label)}</button>`;
   hud.hidden = false;
-  hud.innerHTML = `${btn("ph-prev", "Previous step", "M10 3 5 8l5 5")}<span class="counter">${state.step + 1} / ${path.length}</span><span class="step-title"${cur ? "" : ' style="color:var(--bad)"'}>${esc(title)}</span>${via || inb ? `<span class="meta">via <b>${esc(via ?? inb.trigger)}</b></span>` : ""}${btn("ph-next", "Next step", "m6 3 5 5-5 5")}`;
+  hud.innerHTML = `${btn("ph-prev", "Previous step", "caret-left")}<span class="counter-label">${state.step + 1} / ${path.length}</span><span class="step-title"${cur ? "" : ' style="color:var(--bad)"'}>${esc(title)}</span>${via || inb ? `<span class="meta">via <b>${esc(via ?? inb.trigger)}</b></span>` : ""}${btn("ph-next", "Next step", "caret-right")}`;
   hud.querySelector("#ph-prev")!.addEventListener("click", (ev) => { ev.stopPropagation(); onStep(Math.max(0, state.step - 1)); });
   hud.querySelector("#ph-next")!.addEventListener("click", (ev) => { ev.stopPropagation(); onStep(Math.min(path.length - 1, state.step + 1)); });
 }
