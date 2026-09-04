@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@dagrejs/dagre": "^3.1.1",
+    "@phosphor-icons/core": "^2.1.1",
     "@types/node": "^26.4.1",
     "esbuild": "^0.28.2",
     "tsx": "^4.23.13",
