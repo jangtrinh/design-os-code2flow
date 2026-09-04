@@ -13,7 +13,7 @@ export let states: ScreenNode[] = [];
 export const shellTargets = new Set<string>();
 export const featById: Record<string, Feature> = {};
 
-export const state: ViewState = { level: "map", feature: null, story: null, mode: "inspect", selected: null, step: 0, showDismiss: false, showTray: false };
+export const state: ViewState = { level: "map", feature: null, story: null, mode: "inspect", selected: null, step: 0, playFocus: false, showDismiss: false, showTray: false };
 
 export function initData(data: ViewerData): void {
   D = data;

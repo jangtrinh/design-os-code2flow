@@ -35,6 +35,7 @@ export interface ViewState {
   mode: "inspect" | "present" | "play";
   selected: Selection;
   step: number;
+  playFocus: boolean;
   showDismiss: boolean;
   showTray: boolean;
 }

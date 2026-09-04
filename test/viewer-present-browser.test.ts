@@ -12,8 +12,8 @@ const fx = copyFixture("viewer"); const FIXTURE = fx.dir; const DATA = join(FIXT
 const JPEG = Buffer.from("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==", "base64");
 /** v2 manifest: main path with `via`, one branch, an exit, and a screen the code lacks (UC-04/UC-07). */
 const MANIFEST = { version: 2, features: [{ id: "shop", title: "Shop", match: ["/", "/pricing", "/orders/**", "/docs/**"] }, { id: "account", title: "Product catalog administration", match: [] }], stories: [
-  { id: "buy", title: "Buy a plan", entry: "/", exit: ["/orders?drawer=details"], screens: ["/", "/pricing", "/checkout-ghost", "/orders?drawer=details", "/docs/[...parts]"],
-    steps: ["/", { screen: "/pricing", via: "Pricing" }, { screen: "/checkout-ghost", via: "Checkout" }, "/orders?drawer=details"],
+  { id: "buy", title: "Buy a plan", entry: "/", exit: ["/orders?drawer=details"], screens: ["/", "/pricing", "/orders?drawer=details", "/checkout-ghost", "/docs/[...parts]"],
+    steps: ["/", { screen: "/pricing", via: "Pricing" }, { screen: "/orders?drawer=details", via: "Checkout" }, "/checkout-ghost"],
     branches: [{ title: "Read the docs first", from: "/pricing", steps: [{ screen: "/docs/[...parts]", via: "Checkout" }, "/orders?drawer=details"] }] },
 ] };
 
@@ -22,8 +22,10 @@ let html: string; let viewerDir: string; let browser: Awaited<ReturnType<typeof 
 beforeAll(async () => {
   viewerDir = await buildViewer();
   await scanCommand(FIXTURE, () => {});
-  mkdirSync(join(DATA, "shots"), { recursive: true }); writeFileSync(shotFiles(join(DATA, "shots"), "/").full, JPEG);
-  writeFileSync(join(DATA, "shots-meta.json"), JSON.stringify({ "/": { url: "/", width: 1440, height: 900 } }));
+  mkdirSync(join(DATA, "shots"), { recursive: true });
+  const captured = ["/", "/orders?drawer=details"];
+  for (const id of captured) writeFileSync(shotFiles(join(DATA, "shots"), id).full, JPEG);
+  writeFileSync(join(DATA, "shots-meta.json"), JSON.stringify(Object.fromEntries(captured.map((id) => [id, { url: id, width: 1440, height: 900 }]))));
   writeFileSync(join(FIXTURE, "code2flow.stories.json"), JSON.stringify(MANIFEST));
   [html] = await exportCommand(FIXTURE, viewerDir, {}, () => {});
   browser = await launchBrowser(resolvePlaywright(FIXTURE), true);
@@ -79,7 +81,7 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     expect(await text("#phud")).toContain("2 / 4"); expect(await text("#phud")).toContain("via Pricing");
   });
   it("stepping onto the missing screen and Inspect's story view never throw", async () => {
-    await open("#f/shop/s/buy/present/2");
+    await open("#f/shop/s/buy/present/3");
     expect(await text("#phud")).toContain("Missing screen");
     await page.keyboard.press("ArrowRight"); await page.waitForTimeout(200); expect(await text("#phud")).toContain("4 / 4");
     await open("#f/shop/s/buy");
@@ -94,20 +96,37 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     await open("#f/shop/s/buy/play/0");
     expect(await page.evaluate<boolean>(`document.querySelector('#phud').hidden`)).toBe(true);
   });
-  it("play mode renders every step as a gallery card and card three becomes current", async () => {
+  it("Play grid card three opens Focus, advances, and returns to its current grid card", async () => {
     await open("#f/shop/s/buy/play/0");
     expect(await count("#player .player-card")).toBe(4);
     expect(await count("#player .player-card .player-step-chip")).toBe(4);
     expect(await page.evaluate<{ columns: string; x: string; y: string }>(`(() => { const style = getComputedStyle(document.querySelector('.player-gallery')); return { columns: style.gridTemplateColumns, x: style.overflowX, y: style.overflowY }; })()`)).toEqual(expect.objectContaining({ x: "hidden", y: "auto" }));
-    await page.evaluate<void>(`[...document.querySelectorAll('#player .player-card')][2].dispatchEvent(new MouseEvent('click', { bubbles: true }))`);
+    const stepThreeShot = await page.evaluate<string>(`document.querySelector('#player .player-card[data-step="2"] img')?.getAttribute('src') ?? ''`);
+    await (page as unknown as { click(selector: string): Promise<void> }).click('#player .player-card[data-step="2"]');
     await page.waitForTimeout(200);
-    expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/2");
-    expect(await page.evaluate<number>(`[...document.querySelectorAll('#player .player-card')].findIndex((card) => card.classList.contains('on'))`)).toBe(2);
+    expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/2/focus");
+    expect(await count("#player .player-focus")).toBe(1);
+    expect(await page.evaluate<string>(`document.querySelector('.player-focus img')?.getAttribute('src') ?? ''`)).toBe(stepThreeShot);
+    await page.keyboard.press("ArrowRight"); await page.waitForTimeout(200);
+    expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/3/focus");
+    await page.keyboard.press("Escape"); await page.waitForTimeout(200);
+    expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/3");
+    expect(await count("#player .player-gallery")).toBe(1);
+    expect(await page.evaluate<number>(`[...document.querySelectorAll('#player .player-card')].findIndex((card) => card.classList.contains('on'))`)).toBe(3);
+  });
+  it("loads a Focus hash directly and exposes its view control", async () => {
+    await open("#f/shop/s/buy/play/1/focus");
+    expect(await count("#player .player-focus")).toBe(1);
+    expect(await count('.player-view-seg [title="Grid view"]')).toBe(1);
+    expect(await count('.player-view-seg [title="Focus view"]')).toBe(1);
+    await (page as unknown as { click(selector: string): Promise<void> }).click('.player-view-seg [title="Grid view"]');
+    expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/1");
+    expect(await count("#player .player-gallery")).toBe(1);
   });
   it("removes the Play panel action row", async () => {
     await open("#f/shop/s/buy/play/0");
     expect(await count("#player .player-actions")).toBe(0);
-    await page.evaluate<void>(`[...document.querySelectorAll('#player .player-thumb')][1].dispatchEvent(new MouseEvent('click', { bubbles: true }))`);
+    await (page as unknown as { click(selector: string): Promise<void> }).click('#player .player-thumb[aria-label="Step 2"]');
     await page.waitForTimeout(200);
     expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/1");
   });
@@ -115,6 +134,10 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     await open("#f/shop");
     expect(await count("#toolbar-left #nav-back")).toBe(0);
     expect(await count("#toolbar-left .crumb")).toBe(1);
+  });
+  it("keeps Present breadcrumbs at the left edge when the rail is hidden", async () => {
+    await open("#f/shop/s/buy/present/0");
+    expect(await page.evaluate<number>(`document.querySelector('#toolbar-left').getBoundingClientRect().x`)).toBeLessThan(24);
   });
   it("play mode advances with ArrowRight and writes its hash", async () => {
     await open("#f/shop/s/buy/play/0");
@@ -127,6 +150,18 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     await (page as unknown as { click(selector: string): Promise<void> }).click(".edge-pill"); await page.waitForTimeout(300); // a real pointer click: the canvas drag handler must not swallow it
     expect(await count('#drawer.open .inspector-row')).toBeGreaterThan(0);
     expect(await page.evaluate<string>("location.hash")).toContain("sel/edge%3A");
+  });
+  it("keeps fixture edge pills separated and wide enough for their labels", async () => {
+    await open("#f/shop");
+    expect(await page.evaluate<string[]>(`(() => {
+      const pills = [...document.querySelectorAll('.edge-pill')];
+      const intersects = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+      return pills.flatMap((pill, index) => {
+        const box = pill.getBoundingClientRect(); const rect = pill.querySelector('rect')?.getBoundingClientRect(); const label = pill.querySelector('text')?.getBoundingClientRect();
+        const overlaps = pills.slice(index + 1).filter((other) => intersects(box, other.getBoundingClientRect())).map((other) => other.getAttribute('aria-label'));
+        return [...overlaps, ...(rect && label && rect.width >= label.width + 12 ? [] : ['clipped:' + pill.getAttribute('aria-label')])];
+      });
+    })()`)).toEqual([]);
   });
   it("removes the HUD and delegates keyboard zoom and fit after a hash redraw", async () => {
     await open("#f/shop");
@@ -169,6 +204,6 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     expect(viewer.match(/(?:textContent|innerHTML)\s*=\s*["'](?:Kind|File|URL|Out|In|Sidebar|states|stories|flows|missing)["']/gi) ?? []).toEqual([]);
     await open("#f/shop");
     const counts = await page.evaluate<{ icons: number; titles: number }>(`(() => { const icons = [...document.querySelectorAll('svg')].filter((svg) => [...svg.children].some((child) => child.localName === 'title')); return { icons: icons.length, titles: document.querySelectorAll('svg > title').length }; })()`);
-    expect(counts).toEqual({ icons: 43, titles: 43 });
+    expect(counts).toEqual({ icons: 45, titles: 45 });
   });
 });

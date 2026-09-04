@@ -107,11 +107,15 @@ Choose **Present** to show one canvas lane at a time. Both sidebars are hidden s
 
 ### Play every step
 
-Choose **Play** to see a gallery of every step in the selected story. Select a gallery card or use the arrow keys to move between captures.
+Choose **Play** to see a grid of every step in the selected story. Click a card to open Focus view: one step at a time with prev/next arrows, a `3 / 4` chip and the Play panel evidence beside it. Arrow keys move between steps in both views; `Escape` returns from Focus to the grid. The two buttons at the top of the Play panel switch views.
 
 ![Play gallery](assets/play-gallery.png)
 
 *Caption: Play mode puts every story step in a selectable capture gallery.*
+
+![Play focus](assets/play-focus.png)
+
+*Caption: Focus view shows one step with its evidence; click a grid card to enter it.*
 
 ### Read State Screens and zoom
 

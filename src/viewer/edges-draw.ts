@@ -1,5 +1,5 @@
 import { el, FH, uiScale } from "./svg.js";
-import { state } from "./data-model.js";
+import { fitText, state, textW } from "./data-model.js";
 import { iconSvg } from "./icons.js";
 import type { Bundle } from "./types.js";
 
@@ -20,9 +20,11 @@ export function drawBundle(g: SVGGElement, b: Bundle, pos: Record<string, Pos>, 
 }
 
 export function pill(g: SVGGElement, mx: number, my: number, b: Bundle, onSelect?: (bundle: Bundle) => void): void {
-  const trigger = b.primary.trigger.length > 24 ? b.primary.trigger.slice(0, 23) + "…" : b.primary.trigger;
+  const trigger = fitText(b.primary.trigger, 150, 7);
   const label = `${trigger} ${b.edges.length}`; const title = `${b.primary.trigger} · ${b.edges.length} links`;
-  const warn = b.confidence === "low"; const w = label.length * 6 + (warn ? 30 : 16); const pg = uiScale("ui-scale center edge-pill", mx - w / 2, my - 10);
+  const warn = b.confidence === "low"; const w = textW(label, 7) + (warn ? 30 : 16); let y = my;
+  while ([...g.querySelectorAll<SVGGElement>(".edge-pill")].some((pill) => Math.abs(Number(pill.dataset.pillY) - y) < 24)) y += 24;
+  const pg = uiScale("ui-scale center edge-pill", mx - w / 2, y - 10); pg.dataset.pillY = String(y);
   pg.setAttribute("tabindex", "0"); pg.setAttribute("role", "button"); pg.setAttribute("aria-label", title); pg.setAttribute("title", title);
   pg.append(el("rect", { x: 0, y: 0, width: w, height: 20, class: "pill-bg " + b.confidence })); if (warn) pg.append(iconSvg("warning", "Review confidence", 5, 4, 12)); pg.append(el("text", { x: warn ? 21 : w / 2, y: 14, "text-anchor": warn ? "start" : "middle", class: "pill" }, label));
   const select = (event: Event): void => { event.stopPropagation(); onSelect?.(b); };

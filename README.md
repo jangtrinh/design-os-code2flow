@@ -45,9 +45,11 @@ Start with the **[user guide](docs/user-guide.md)** — install to hand-outs, st
 
 ![Present lane](https://raw.githubusercontent.com/jangtrinh/design-os-code2flow/main/docs/assets/present-lane.png)
 
-**Play every step as a gallery.** All screenshots of a story in order; click any card to make it current.
+**Play every step.** Grid view shows every screenshot of a story in order; click a card for Focus view, one step at a time with the evidence beside it.
 
 ![Play gallery](https://raw.githubusercontent.com/jangtrinh/design-os-code2flow/main/docs/assets/play-gallery.png)
+
+![Play focus](https://raw.githubusercontent.com/jangtrinh/design-os-code2flow/main/docs/assets/play-focus.png)
 
 **Keep the legend close.** The left rail holds features, stories and the arrow legend; every canvas icon explains itself on hover.
 

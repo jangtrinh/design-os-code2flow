@@ -48,14 +48,16 @@ export function renderCrumb(h: NavHandlers): void {
 export function hashOf(): string {
   if (state.level === "map") return "#map";
   const p = ["#f", state.feature]; if (state.story) p.push("s", state.story); if (state.mode === "present" || state.mode === "play") p.push(state.mode, String(state.step));
+  if (state.mode === "play" && state.playFocus) p.push("focus");
   if (state.selected) p.push("sel", encodeURIComponent("edges" in state.selected ? `edge:${state.selected.source}>${state.selected.target}` : state.selected.id));
   return p.join("/");
 }
 export function applyHash(): boolean {
   const h = location.hash.slice(1); if (!h || h === "map") { state.level = "map"; state.selected = null; return true; }
   const p = h.split("/"); if (p[0] !== "f" || !featById[p[1]]) return false;
-  state.level = "feature"; state.feature = p[1]; state.story = null; state.mode = "inspect"; state.step = 0; state.selected = null;
+  state.level = "feature"; state.feature = p[1]; state.story = null; state.mode = "inspect"; state.step = 0; state.playFocus = false; state.selected = null;
   for (let i = 2; i < p.length; i += 2) { if (p[i] === "s") state.story = p[i + 1]; if (p[i] === "present" || p[i] === "play") { state.mode = p[i] === "play" ? "play" : "present"; state.step = +p[i + 1] || 0; } if (p[i] === "sel") { const selected = decodeURIComponent(p[i + 1]); const s = byId.get(selected); if (s) state.selected = s; else if (selected.startsWith("edge:")) { const [source, target] = selected.slice(5).split(">"); const edges = D.graph.edges.filter((edge) => edge.source === source && edge.target === target); if (edges.length) state.selected = { source, target, edges, primary: edges[0], confidence: edges[0].confidence, missing: false } satisfies Bundle; } } }
+  state.playFocus = state.mode === "play" && p.at(-1) === "focus";
   return true;
 }
 
