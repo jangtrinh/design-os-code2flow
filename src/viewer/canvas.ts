@@ -14,7 +14,7 @@ export class Canvas {
   private safeArea(): { x: number; y: number; w: number; h: number } {
     const r = this.stage.getBoundingClientRect();
     const box = (id: string): DOMRect | null => { const e = document.getElementById(id); if (!e || e.hidden) return null; const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0 && getComputedStyle(e).visibility !== "hidden" ? b : null; }; // panels are position:fixed, so offsetParent cannot be used
-    const rail = box("rail"), drawer = box("drawer"), top = box("toolbar") ?? document.querySelector("header")?.getBoundingClientRect() ?? null, bottom = box("hud") ?? box("phud");
+    const rail = box("rail"), drawer = box("drawer"), top = box("toolbar-left"), bottom = box("hud") ?? box("phud");
     const left = rail ? rail.right - r.left + 16 : 24, right = drawer ? r.right - drawer.left + 16 : 24;
     const up = top ? top.bottom - r.top + 16 : 24, down = bottom ? r.bottom - bottom.top + 16 : 24;
     return { x: left, y: up, w: Math.max(200, r.width - left - right), h: Math.max(200, r.height - up - down) };

@@ -44,7 +44,7 @@ Screenshots are stored as `.code2flow/shots/<hash-of-screen-id>.jpg`, so re-scan
 npx code2flow serve /path/to/repo      # http://127.0.0.1:4317
 ```
 
-Product map → feature page → story. `Inspect` shows the feature overview (frames collapsed) or a story canvas (frames expanded with their state screens). `Present` shows one swimlane per story with keyboard stepping: with a v2 manifest the lane follows `steps` (pills show the PRD's `via`), each `branch` is an indented sub-row under the screen it forks from, `entry`/`exit` are chips, a step with no transition in the code is a red dashed arrow, and a screen the code lacks is a red MISSING SCREEN stub. `⌘K` finds any screen or story; every view is a shareable hash link.
+Product map → feature page → story. `Inspect` shows the feature overview (frames collapsed) or a story canvas (frames expanded with their state screens). `Present` shows one swimlane per story with keyboard stepping: with a v2 manifest the lane follows `steps` (pills show the PRD's `via`), each `branch` is an indented sub-row under the screen it forks from, `entry`/`exit` are chips, a step with no transition in the code is a red dashed arrow, and a screen the code lacks is a red MISSING SCREEN stub. `Play` walks the same path one screenshot at a time with its evidence and a shareable step hash. `⌘K` finds any screen or story; every view is a shareable hash link.
 
 ## 4. Export
 

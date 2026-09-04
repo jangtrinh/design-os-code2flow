@@ -11,7 +11,7 @@ import { copyFixture } from "./helpers/fixture-copy.js";
 const fx = copyFixture("viewer"); const FIXTURE = fx.dir; const DATA = join(FIXTURE, ".code2flow");
 const JPEG = Buffer.from("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==", "base64");
 /** v2 manifest: main path with `via`, one branch, an exit, and a screen the code lacks (UC-04/UC-07). */
-const MANIFEST = { version: 2, features: [{ id: "shop", title: "Shop", match: ["/", "/pricing", "/orders/**", "/docs/**"] }], stories: [
+const MANIFEST = { version: 2, features: [{ id: "shop", title: "Shop", match: ["/", "/pricing", "/orders/**", "/docs/**"] }, { id: "account", title: "Product catalog administration", match: [] }], stories: [
   { id: "buy", title: "Buy a plan", entry: "/", exit: ["/orders?drawer=details"], screens: ["/", "/pricing", "/checkout-ghost", "/orders?drawer=details", "/docs/[...parts]"],
     steps: ["/", { screen: "/pricing", via: "Pricing" }, { screen: "/checkout-ghost", via: "Checkout" }, "/orders?drawer=details"],
     branches: [{ title: "Read the docs first", from: "/pricing", steps: [{ screen: "/docs/[...parts]", via: "Checkout" }, "/orders?drawer=details"] }] },
@@ -42,6 +42,23 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     expect(await text("#rail")).toContain("Shop");
     expect(await page.evaluate<boolean>(`document.fonts.check('600 15px "Be Vietnam Pro"') && document.fonts.check('12px "JetBrains Mono"')`)).toBe(true);
   });
+  it("feature breadcrumb dropdown exposes the manifest choices and changes the hash", async () => {
+    await open("#f/shop");
+    await page.evaluate<void>(`document.querySelector('[aria-label="Feature"]').click()`);
+    expect(await count('[role="listbox"]:not([hidden]) [role="option"]')).toBe(2);
+    expect(await text('[role="listbox"]:not([hidden])')).toContain("Shop");
+    expect(await text('[role="listbox"]:not([hidden])')).toContain("Product catalog administration");
+    await page.evaluate<void>(`document.querySelectorAll('[role="listbox"]:not([hidden]) [role="option"]')[1].click()`);
+    expect(await page.evaluate<string>("location.hash")).toBe("#f/account");
+  });
+  it("uses split toolbar groups, slash breadcrumbs, and an unclipped dropdown", async () => {
+    await open("#f/shop");
+    expect(await count(".toolbar")).toBe(2);
+    expect(await count(".crumb-separator")).toBe(2);
+    expect(await page.evaluate<string[]>(`(() => [...document.querySelectorAll('.crumb-separator')].map((separator) => separator.textContent ?? ''))()`)).toEqual(["/", "/"]);
+    await page.evaluate<void>(`document.querySelector('[aria-label="Feature"]').click()`);
+    expect(await page.evaluate<boolean>(`(() => { const menu = document.querySelector('.crumb-menu:not([hidden])'); const row = menu.querySelector('.crumb-option'); const style = getComputedStyle(menu); return style.width !== '0px' && style.overflowY === 'auto' && row.scrollWidth === row.clientWidth; })()`)).toBe(true);
+  });
   it("present mode follows v2 steps: main path + branch sub-row, entry/exit chips, via labels, asserted edge for the missing step", async () => {
     await open("#f/shop/s/buy/present/1");
     expect(await count(".lane")).toBe(2); // the story lane + the "Not in a story" tray
@@ -59,5 +76,15 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     await open("#f/shop/s/buy");
     expect(await text("#view")).toContain("Not in code · 1");
     expect(errors).toEqual([]);
+  });
+  it("play mode shows the current image and one thumbnail per story step", async () => {
+    await open("#f/shop/s/buy/play/0");
+    expect(await count("#player .player-current img")).toBe(1);
+    expect(await count("#player .player-thumb")).toBe(4);
+  });
+  it("play mode advances with ArrowRight and writes its hash", async () => {
+    await open("#f/shop/s/buy/play/0");
+    await page.keyboard.press("ArrowRight"); await page.waitForTimeout(200);
+    expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/1");
   });
 });

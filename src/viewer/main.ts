@@ -7,6 +7,7 @@ import type { Bundle, ScreenTitles, ShotMeta, ViewerData } from "./types.js";
 import { renderInspect } from "./views-inspect.js";
 import { renderMap } from "./views-map.js";
 import { presenterHud, renderLanes } from "./views-present.js";
+import { renderStoryPlayer } from "./story-player.js";
 
 /** Loads `.code2flow/*` from the serving CLI (or an inlined payload in exports) and boots the canvas. */
 export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
@@ -19,20 +20,29 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
   document.title = `${data.productName} · Code2Flow`;
   if (!data.features.length) { emptyState(stage, `No features detected: the graph has ${data.graph.screens.length} screens and no route screens. Run \`code2flow scan\` on the app root (the folder that contains app/ or src/app/).`); return; }
   const view = document.getElementById("view") as unknown as SVGGElement; const canvas = new Canvas(stage, view);
+  const player = document.getElementById("player")!;
   let applyingHash = false;
   const render = (): void => {
     if (printMode && state.mode === "present") state.step = -1; // Hand-outs show the complete lane, never a dimmed focused step.
-    view.replaceChildren(); renderRail(nav); renderCrumb(nav);
+    view.replaceChildren(); document.body.classList.toggle("playing", state.mode === "play"); renderRail(nav); renderCrumb(nav);
     document.getElementById("fit")?.addEventListener("click", () => canvas.fit());
     document.getElementById("z-in")?.addEventListener("click", () => canvas.zoomCenter(1.2));
     document.getElementById("z-out")?.addEventListener("click", () => canvas.zoomCenter(1 / 1.2));
     const phud = document.getElementById("phud")!; phud.hidden = true;
-    if (state.level === "map") { renderMap(view, (id) => nav.openFeature(id, null)); canvas.fit(); return; }
+    if (state.level === "map") { player.hidden = true; renderMap(view, (id) => nav.openFeature(id, null)); canvas.fit(); return; }
     if (state.mode === "present") {
+      player.hidden = true;
       const { story, stepId } = renderLanes(view, { onSelect: select, onSelectBundle: select, onOpenStory: openStoryOf, onStep: (sid, i) => { state.story = sid; state.step = i; go(); }, onToggleTray: () => { state.showTray = !state.showTray; render(); } });
       if (story && stepId) { presenterHud(phud, story, stepId, (i) => { state.story = story.id; state.step = i; go(); }); canvas.focusOn(stepId); } else canvas.fit();
       return;
     }
+    if (state.mode === "play") {
+      const stories = D.stories.filter((s) => storyFeature(s) === state.feature); const story = stories.find((s) => s.id === (state.story ?? stories[0]?.id));
+      if (story) { state.story = story.id; state.step = Math.min(Math.max(0, state.step), Math.max(0, storyPath(story).length - 1)); }
+      renderStoryPlayer(player, story, state.step, { step: (index) => { state.step = index; go(); }, canvas: () => { state.mode = "present"; go(); }, screenshot: openLightbox });
+      return;
+    }
+    player.hidden = true;
     renderInspect(view, { onSelect: select, onSelectBundle: select, onOpenStory: openStoryOf, onPortal: (feature, target) => { state.level = "feature"; state.feature = feature; state.story = null; state.mode = "inspect"; const t = byId.get(target); state.selected = t ?? null; go(); if (t) { showDrawer(t, select, openLightbox); canvas.focusOn(t.id); } } });
     canvas.fit();
   };
@@ -47,7 +57,7 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
     gotoScreen: (s) => { state.level = "feature"; state.feature = featureOf(s.id); state.story = null; state.mode = "inspect"; state.step = 0; state.selected = s; go(); showDrawer(s, select, openLightbox); canvas.focusOn(routeOf(s.id) ?? s.id); },
   };
   const palette = setupPalette(nav);
-  document.querySelectorAll<HTMLButtonElement>("#modeSeg button").forEach((b) => b.addEventListener("click", () => { state.mode = b.dataset.mode as "inspect" | "present"; state.selected = null; if (state.level === "map") { state.level = "feature"; state.feature = state.feature ?? [...D.features].sort((a, c) => a.order - c.order)[0]?.id ?? null; } go(); }));
+  document.querySelectorAll<HTMLButtonElement>("#modeSeg button").forEach((b) => b.addEventListener("click", () => { state.mode = b.dataset.mode as "inspect" | "present" | "play"; state.selected = null; if (state.level === "map") { state.level = "feature"; state.feature = state.feature ?? [...D.features].sort((a, c) => a.order - c.order)[0]?.id ?? null; } go(); }));
   document.getElementById("nav-back")!.addEventListener("click", () => history.back());
   document.getElementById("lightbox")!.addEventListener("click", (ev) => { if (!(ev.target as Element).closest(".scroller")) document.getElementById("lightbox")!.hidden = true; });
   stage.addEventListener("click", () => { if (state.selected) { state.selected = null; closeDrawer(); render(); } });
@@ -58,9 +68,9 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
     if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "k") { palette.open(); ev.preventDefault(); return; } if (ev.key === "/") { palette.open(); ev.preventDefault(); return; }
     if (ev.key === "f" || ev.key === "F") { canvas.fit(); return; }
     if ((ev.key === "]" || ev.key === "[") && state.level === "feature" && fs.length) { const i = Math.max(0, fs.findIndex((s) => s.id === state.story)); const j = ev.key === "]" ? (i + 1) % fs.length : (i - 1 + fs.length) % fs.length; nav.setStory(fs[j].id); return; }
-    if (state.level === "feature" && state.mode === "present" && st) { if (ev.key === "ArrowRight" || ev.key === "PageDown") { state.story = st.id; state.step = Math.min(storyPath(st).length - 1, state.step + 1); go(); ev.preventDefault(); } if (ev.key === "ArrowLeft" || ev.key === "PageUp") { state.story = st.id; state.step = Math.max(0, state.step - 1); go(); ev.preventDefault(); } }
+    if (state.level === "feature" && (state.mode === "present" || state.mode === "play") && st) { if (ev.key === "ArrowRight" || ev.key === "PageDown") { state.story = st.id; state.step = Math.min(storyPath(st).length - 1, state.step + 1); go(); ev.preventDefault(); } if (ev.key === "ArrowLeft" || ev.key === "PageUp") { state.story = st.id; state.step = Math.max(0, state.step - 1); go(); ev.preventDefault(); } }
     if ((ev.key === "p" || ev.key === "P") && state.level === "feature") { state.mode = "present"; go(); }
-    if (ev.key === "Escape") { document.getElementById("lightbox")!.hidden = true; if (palette.isOpen()) { palette.close(); return; } if (state.mode === "present") { state.mode = "inspect"; go(); } else if (state.selected) { state.selected = null; closeDrawer(); render(); } else if (state.story) { state.story = null; go(); } else if (state.level === "feature") { state.level = "map"; go(); } }
+    if (ev.key === "Escape") { document.getElementById("lightbox")!.hidden = true; if (palette.isOpen()) { palette.close(); return; } if (state.mode === "play") { state.mode = "present"; go(); } else if (state.mode === "present") { state.mode = "inspect"; go(); } else if (state.selected) { state.selected = null; closeDrawer(); render(); } else if (state.story) { state.story = null; go(); } else if (state.level === "feature") { state.level = "map"; go(); } }
     if (ev.shiftKey && ev.key === "!") canvas.fit();
   });
   if (location.hash && location.hash !== "#map" && applyHash()) { render(); if (state.selected && "id" in state.selected) showDrawer(state.selected, select, openLightbox); } else render();

@@ -32,7 +32,7 @@ export interface ViewState {
   level: "map" | "feature";
   feature: string | null;
   story: string | null;
-  mode: "inspect" | "present";
+  mode: "inspect" | "present" | "play";
   selected: Selection;
   step: number;
   showDismiss: boolean;
