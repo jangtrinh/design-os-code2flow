@@ -63,6 +63,7 @@ describe("run, init, and paths (seams: target repo artifacts and CLI exit codes)
     writeFileSync(server, `require('http').createServer((_, r) => r.end('ok')).listen(${port}, '127.0.0.1')`);
     writeFileSync(join(devFx.dir, "code2flow.config.json"), JSON.stringify({ serverUrl: url }));
     const result = await command(["run", devFx.dir, "--dev", `node ${server}`]);
+    expect(result.lines.some((line) => line.startsWith("run  starting the app's dev server: node "))).toBe(true); // the repo-supplied command is echoed before it runs (2026-09-04 audit M5)
     expect(result.code).toBe(1);
     expect(existsSync(join(devFx.dir, ".code2flow", "run-summary.json"))).toBe(true);
     expect(await answers(url)).toBe(false);

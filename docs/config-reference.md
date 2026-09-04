@@ -25,6 +25,8 @@ Two optional files in the **target repo** root. Everything has a default; the fi
 }
 ```
 
+> `run` executes `devCommand` with a shell inside the target repo, exactly like `npm run dev` would. It is a repo-supplied command: read `code2flow.config.json` before running Code2Flow on a repo you did not write. The command is echoed before it starts.
+
 - `match` accepts an exact path or `/prefix/**`. First match wins. Routes matched by nothing fall back to their top segment; `/`, `/settings…`, `/notifications` go to `account`.
 - Route samples are resolved in order: string-literal hrefs in the code → links discovered on captured pages → `routeExamples` → the `needs-sample` counter (and lint finding).
 

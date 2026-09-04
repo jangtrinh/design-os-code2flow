@@ -31,6 +31,7 @@ export async function runCommand(repoArg: string, viewerDir: string, flags: Reco
     if (!suppliedUrl) {
       if (await serverAnswers(serverUrl)) throw new RunAbort(`port ${portFor(serverUrl)} already answers (fixed-port rule: never pick another port)`);
       const command = typeof flags.dev === "string" ? flags.dev : config.devCommand ?? "npm run dev";
+      log(`run  starting the app's dev server: ${command}  (from code2flow.config.json devCommand — a repo-supplied command)`); // the PO sees exactly what a cloned repo makes us execute
       started = startDevServer(command, rootDir);
       signalHandler = (signal) => { void stopDevServer(started!.process, serverUrl).finally(() => process.exit(signal === "SIGINT" ? 130 : 143)); };
       process.once("SIGINT", signalHandler); process.once("SIGTERM", signalHandler);
