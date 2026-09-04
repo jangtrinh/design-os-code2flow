@@ -34,3 +34,13 @@ Follow all rules in `.project-agent.md` binding rules section. This is **MANDATO
 - Use `CONTEXT.md` canonical terms in all naming (code, plans, commits); never use terms listed under `_Avoid_`. New terms crystallise via `/es:brainstorm` grilling.
 - An es-* skill misled or lacks a rule? Do NOT patch the skill mid-task — record a `gap` in the evolution ledger (`/es:librarian` branch `record`); `/es:librarian run` graduates it with a judge + human merge.
 - End of ANY substantial task (pipeline or not): Reflect — distil AT MOST ONE durable lesson. Product lesson → `.brv`/`CONTEXT.md`; kit lesson → `gap`; nothing durable → record NOTHING.
+
+## Release checklist
+
+1. `npx tsc --noEmit && npm run lint && npx vitest run && npm run recall && npm run audit:design` — all 0.
+2. Run `code2flow run` on at least one real external app (not a fixture), open the export, look at the product map, a feature page and the Inspector, and click one edge pill with a real pointer.
+3. Bump `package.json`, commit, push, tag `v*`: CI stages the version on npm; the maintainer approves with `npm stage approve <stage-id>`.
+
+## Browser tests
+
+Interactions are asserted with a real Playwright pointer click, never `element.dispatchEvent(new MouseEvent("click"))`: synthetic events skip pointerdown, so the canvas drag allow-list in `src/viewer/canvas.ts` is never exercised and a dead control passes.
