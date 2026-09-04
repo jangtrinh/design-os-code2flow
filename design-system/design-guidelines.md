@@ -44,3 +44,16 @@ Reference: https://www.figma.com/design/OKaCq9ds8qnJRFaPyHjjbl/VSF---PCP?node-id
 
 ## Spatial interactions (ADR-0003)
 - Drag to pan, two-finger scroll to pan, `Cmd/Ctrl + wheel` or pinch to zoom (0.05–4×). `Shift+1` fit view. Present mode: `→`/`←`/`PageDown`/`PageUp` step, `Esc` back to Inspect, `P` present.
+
+
+## Design system v2 — BW-DLS (adopted 2026-09-04)
+
+Source: Figma "BW - DLS" reference frame 8146:28777; values in `tokens.json`. Rules that override anything above when they conflict:
+
+- **Canvas is the page.** Full-bleed ground `surface-02` (#F8F7F7); every piece of chrome is a floating panel (`surface-01`, radius 16–20, `depth-1` / `toolbar` / `popover` shadows) inset 12–16 px from the viewport edge. No fixed header bar, no fixed rail, no fixed drawer.
+- **Four panels max:** left navigation (features → stories), top toolbar (back, breadcrumb selects, search, mode segment), right inspector (only when something is selected), bottom bar (presenter controls in Present mode, zoom/fit otherwise).
+- **Minimal text.** Labels are nouns of ≤ 2 words; no sentences or explanations inside the UI; shortcuts are `kbd` chips; counts are tabular figures in `text-secondary`. Empty states are one line.
+- **Type:** Inter; 11–13 px for chrome (`body-small`/`body-large`), 14 px `heading` for panel titles and frame titles, letter-spacing −0.01/−0.02 em. Mono only for route ids.
+- **Colour:** greyscale from `shade-1..9`; `accent-blue` #3582FF is the only state colour (selected frame/edge, current step, focus ring); `signal-red` only for broken links and missing screens. Confidence stays line weight/dash.
+- **Controls:** segmented control = `surface-03` track radius 10 with a `surface-01` active segment (`button` shadow); icon buttons 36 px radius 8 with `stroke-01`, 44 px hit area; list rows 40 px with a 28 px icon square.
+- **Story lanes (Present):** lane = floating card `surface-01` radius 16 `depth-1`, title `heading`, meta `body-small text-secondary`; frames radius 12 `stroke-01`; step pills radius 6; current step outlined `accent-blue` 2 px; non-current dimmed to 0.4, never hidden.

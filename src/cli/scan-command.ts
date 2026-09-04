@@ -1,8 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { detectFramework } from "../parser/framework-detector.js";
-import { ingest } from "../parser/ingest.js";
-import { buildRouteRegistry } from "../parser/nextjs-app-router/route-registry.js";
+import { ingestDetailed } from "../parser/ingest.js";
 import { collectRouteSamples } from "../parser/nextjs-app-router/route-samples.js";
 import { CONFIG_FILE, loadConfig } from "../schema/code2flow-config.js";
 import type { CanonicalFlowGraph } from "../schema/index.js";
@@ -13,10 +11,8 @@ export interface ScanResult { outDir: string; screens: number; edges: number; ne
 export async function scanCommand(repoArg: string, log: (line: string) => void = console.log): Promise<ScanResult> {
   const rootDir = resolve(repoArg);
   const config = loadConfig(rootDir);
-  const graph = await ingest(rootDir);
-  const detected = detectFramework(rootDir)!;
-  const registry = buildRouteRegistry(rootDir, detected.appDir);
-  const samples = collectRouteSamples(graph, registry, config, graph.counters);
+  const { graph, resolver } = await ingestDetailed(rootDir);
+  const samples = collectRouteSamples(graph, resolver, config, graph.counters);
   const outDir = join(rootDir, ".code2flow");
   mkdirSync(outDir, { recursive: true });
   keepSnapshotCounters(join(outDir, "graph.json"), graph);

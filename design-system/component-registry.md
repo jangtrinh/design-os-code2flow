@@ -4,9 +4,9 @@
 
 | Name | Path | Description |
 |------|------|-------------|
-| FlowCanvas | `src/viewer/components/flow/flow-canvas.tsx` | Main @xyflow/react canvas viewport with controls & minimap |
-| ScreenNode | `src/viewer/components/flow/screen-node.tsx` | Frame card for a Route Screen or State Screen with preview & trigger handles |
-| ActionEdge | `src/viewer/components/flow/action-edge.tsx` | Curved edge with trigger pill; dashed + badge when confidence is `low` |
-| StoryFilterBar | `src/viewer/components/flow/story-filter-bar.tsx` | Floating bar: Story Manifest dropdown, entry node picker, depth slider |
-| ScreenDetailDrawer | `src/viewer/components/flow/screen-detail-drawer.tsx` | Drawer showing detected triggers, evidence snippets, confidence |
-| UnlinkedScreensTray | `src/viewer/components/flow/unlinked-screens-tray.tsx` | Tray listing orphan screens with no inbound/outbound edges |
+| Flow Canvas | `src/viewer/canvas.ts` | Full-bleed SVG Flow Canvas beneath floating chrome |
+| Frame | `src/viewer/frame-node.ts` | Route Screen or State Screen card with Screen Preview |
+| User Flow Edge | `src/viewer/edges-draw.ts` | Curved edge and trigger pill; dash expresses Transition Confidence |
+| Left navigation | `src/viewer/navigation.ts` | Feature and User Story Cluster list panel |
+| Inspector | `src/viewer/drawer.ts` | Selection-only evidence popover |
+| Presenter bar | `src/viewer/views-present.ts` | Story step controls over Present lanes |

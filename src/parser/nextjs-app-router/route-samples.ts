@@ -1,6 +1,6 @@
 import { bump, type CanonicalFlowGraph, type Counters, type RouteSamples } from "../../schema/index.js";
 import type { Code2FlowConfig } from "../../schema/code2flow-config.js";
-import type { RouteRegistry } from "./route-registry.js";
+import type { RouteResolver } from "../adapter-types.js";
 
 export type { RouteSamples };
 const DYNAMIC = /\[/;
@@ -9,7 +9,7 @@ const DYNAMIC = /\[/;
  * Sources, in order: hrefs written literally in the code (data arrays, links with concrete ids),
  * then `routeExamples` from code2flow.config.json. Routes still without a sample are counted, not hidden.
  */
-export function collectRouteSamples(graph: CanonicalFlowGraph, registry: RouteRegistry, config: Code2FlowConfig, counters: Counters): RouteSamples {
+export function collectRouteSamples(graph: CanonicalFlowGraph, registry: RouteResolver, config: Code2FlowConfig, counters: Counters): RouteSamples {
   const samples: Record<string, string[]> = {};
   const add = (routeId: string, url: string): void => {
     const list = (samples[routeId] ??= []);

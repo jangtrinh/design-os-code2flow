@@ -50,7 +50,8 @@ export type Counters = Record<string, Record<string, number>>;
 
 export interface CanonicalFlowGraph {
   version: 1;
-  framework: "nextjs-app-router";
+  /** adapter id, e.g. "nextjs-app-router", "static-html", "react-router" */
+  framework: string;
   rootDir: string;
   screens: ScreenNode[];
   edges: ActionEdge[];
