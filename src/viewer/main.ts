@@ -21,6 +21,9 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
   let applyingHash = false;
   const render = (): void => {
     view.replaceChildren(); renderRail(nav); renderCrumb(nav);
+    document.getElementById("fit")?.addEventListener("click", () => canvas.fit());
+    document.getElementById("z-in")?.addEventListener("click", () => canvas.zoomCenter(1.2));
+    document.getElementById("z-out")?.addEventListener("click", () => canvas.zoomCenter(1 / 1.2));
     const phud = document.getElementById("phud")!; phud.hidden = true;
     if (state.level === "map") { renderMap(view, (id) => nav.openFeature(id, null)); canvas.fit(); return; }
     if (state.mode === "present") {
@@ -44,8 +47,6 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
   const palette = setupPalette(nav);
   document.querySelectorAll<HTMLButtonElement>("#modeSeg button").forEach((b) => b.addEventListener("click", () => { state.mode = b.dataset.mode as "inspect" | "present"; state.selected = null; if (state.level === "map") { state.level = "feature"; state.feature = state.feature ?? [...D.features].sort((a, c) => a.order - c.order)[0]?.id ?? null; } go(); }));
   document.getElementById("nav-back")!.addEventListener("click", () => history.back());
-  document.getElementById("fit")!.addEventListener("click", () => canvas.fit());
-  document.getElementById("z-in")!.addEventListener("click", () => canvas.zoomCenter(1.2)); document.getElementById("z-out")!.addEventListener("click", () => canvas.zoomCenter(1 / 1.2));
   document.getElementById("lightbox")!.addEventListener("click", (ev) => { if (!(ev.target as Element).closest(".scroller")) document.getElementById("lightbox")!.hidden = true; });
   stage.addEventListener("click", () => { if (state.selected) { state.selected = null; closeDrawer(); render(); } });
   window.addEventListener("popstate", () => { if (!applyingHash && applyHash()) { render(); if (state.selected && "id" in state.selected) showDrawer(state.selected, select, openLightbox); } });

@@ -13,7 +13,7 @@ export function frameNode(id: string, x: number, y: number, opts: FrameOpts, onS
   const dd = frameDims(id, opts.preferDialog !== false && isState, opts.w);
   const HEAD = isState ? HEAD_STATE : HEAD_ROUTE, w = dd.w, sh = dd.shot.h, fb = isState ? 0 : FB, h = dd.h, src = dd.shot.src;
   const g = el("g", { class: ["frame", isState ? "state" : "", opts.cls ?? ""].join(" "), transform: `translate(${x},${y})`, tabindex: 0, "data-node": id });
-  g.append(el("rect", { class: "bg", width: w, height: h, rx: 8 }));
+  g.append(el("rect", { class: "bg", width: w, height: h, rx: 12 }));
   const parent = isState ? byId.get(s.parentScreenId ?? "") : undefined; const routeId = parent ? parent.id : id;
   const featureTitle = featById[featureOf(id)]?.title ?? ""; const pageTitle = routeTitle(routeId);
   const head = uiScale("ui-scale", PAD, PAD);
@@ -27,8 +27,8 @@ export function frameNode(id: string, x: number, y: number, opts: FrameOpts, onS
   head.append(title); g.append(head, pathG);
   g.append(el("rect", { x: PAD, y: HEAD, width: w - 2 * PAD, height: sh, class: "shot-bg" }));
   if (src) g.append(el("image", { href: src, x: PAD + 1, y: HEAD + 1, width: w - 2 * PAD - 2, height: sh - 2, preserveAspectRatio: "xMinYMin slice", class: "shot" }));
-  else g.append(el("text", { x: PAD + 10, y: HEAD + 24, class: "path" }, D.urls[id] ? "not captured yet" : "no URL (needs a route sample)"));
-  if (opts.badge) { const bw = opts.badge.length * 6.2 + 14; const bg = uiScale("ui-scale right", w - PAD, HEAD + 8); bg.append(el("rect", { x: -bw, y: 0, width: bw, height: 18, rx: 9, class: "chipbg" }), el("text", { x: -bw / 2, y: 13, "text-anchor": "middle", class: "chip" }, opts.badge)); g.append(bg); }
+  else g.append(el("text", { x: PAD + 10, y: HEAD + 24, class: "path" }, D.urls[id] ? "Uncaptured" : "No URL"));
+  if (opts.badge) { const bw = opts.badge.length * 6.2 + 14; const bg = uiScale("ui-scale right", w - PAD, HEAD + 8); bg.append(el("rect", { x: -bw, y: 0, width: bw, height: 18, rx: 6, class: "chipbg" }), el("text", { x: -bw / 2, y: 13, "text-anchor": "middle", class: "chip" }, opts.badge)); g.append(bg); }
   if (!isState) {
     const st = opts.stats ?? { inplace: 0, intra: 0, dismiss: 0, sinks: {}, low: 0 }; const chips: [string, string][] = [];
     const kids = D.graph.screens.filter((z) => z.parentScreenId === id).length;

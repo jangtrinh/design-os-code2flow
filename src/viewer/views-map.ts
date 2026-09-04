@@ -22,11 +22,10 @@ export function renderMap(view: SVGGElement, onOpen: (featureId: string) => void
   for (const [k, n] of xf) { const [a, b] = k.split(">"); const pa = pos[a], pb = pos[b]; if (!pa || !pb) continue; const x1 = pa.x + CW / 2, y1 = pa.y, x2 = pb.x + CW / 2, y2 = pb.y; const lift = Math.abs(x2 - x1) / 3 + 40; g.append(el("path", { d: `M${x1},${y1} C${x1},${y1 - lift} ${x2},${y2 - lift} ${x2},${y2}`, class: "xedge", "marker-end": "url(#arrow)" })); const mx = (x1 + x2) / 2, my = Math.min(y1, y2) - lift * 0.75; g.append(el("rect", { x: mx - 14, y: my - 9, width: 28, height: 18, class: "pill-bg" }), el("text", { x: mx, y: my + 4, "text-anchor": "middle", class: "pill" }, String(n))); }
   for (const f of ordered) {
     const p = pos[f.id]; const s = featureStats(f); const c = el("g", { class: "card", transform: `translate(${p.x},${p.y})` });
-    c.append(el("rect", { class: "bg", width: CW, height: CH, rx: 12 }));
+    c.append(el("rect", { class: "bg", width: CW, height: CH, rx: 16 }));
     c.append(el("text", { x: 18, y: 38, class: "t" }, f.title)); c.append(el("text", { x: 18, y: 80, class: "big" }, String(s.routes))); c.append(el("text", { x: 18 + String(s.routes).length * 17 + 6, y: 80, class: "n" }, "routes"));
-    c.append(el("text", { x: 18, y: 106, class: "n" }, `${s.states} state screens · ${s.edges} flows · ${s.stories} stories`));
-    c.append(el("text", { x: 18, y: 130, class: "n" }, `${s.low} to review`)); c.append(el("text", { x: 18, y: 152, class: "n", style: s.missing ? "fill:var(--bad)" : "" }, `${s.missing} missing links · ${s.xf} cross-feature`));
-    c.append(el("text", { x: 18, y: 176, class: "n", style: "fill:var(--text);text-decoration:underline" }, "Open feature page"));
+    c.append(el("text", { x: 18, y: 106, class: "n" }, `${s.states} states · ${s.stories} stories`));
+    c.append(el("text", { x: 18, y: 130, class: "n", style: s.missing ? "fill:var(--bad)" : "" }, `${s.edges} flows · ${s.missing} missing`));
     c.addEventListener("click", () => onOpen(f.id)); g.append(c);
   }
   view.append(g);

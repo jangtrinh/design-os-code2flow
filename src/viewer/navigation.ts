@@ -11,7 +11,7 @@ export interface NavHandlers { openFeature: (id: string, story: string | null) =
 export function renderRail(h: NavHandlers): void {
   const r = document.getElementById("rail")!; r.replaceChildren();
   const title = (t: string): HTMLElement => { const d = document.createElement("div"); d.className = "legend-title"; d.textContent = t; return d; };
-  r.append(title("Features"));
+  r.append(title(D.productName));
   for (const f of [...D.features].sort((a, b) => a.order - b.order)) {
     const s = featureStats(f); const d = document.createElement("button"); d.className = "rail-item" + (state.feature === f.id && state.level === "feature" ? " on" : "");
     d.innerHTML = `<span>${esc(f.title)}</span><span class="counter">${s.routes}·${s.stories}</span>`; d.addEventListener("click", () => h.openFeature(f.id, null)); r.append(d);
@@ -21,12 +21,11 @@ export function renderRail(h: NavHandlers): void {
       n.innerHTML = `<span>Not in a story</span><span class="counter">${cnt}</span>`; n.addEventListener("click", () => { state.mode = "inspect"; h.setStory(null); }); r.append(n);
     }
   }
-  r.append(title("Options"));
-  const l = document.createElement("label"); l.className = "option-label"; l.innerHTML = `<input type="checkbox" ${state.showDismiss ? "checked" : ""}> Show Cancel/Close edges`; l.querySelector("input")!.addEventListener("change", (ev) => h.toggleDismiss((ev.target as HTMLInputElement).checked)); r.append(l);
+  const l = document.createElement("label"); l.className = "option-label"; l.innerHTML = `<input type="checkbox" ${state.showDismiss ? "checked" : ""}> Cancel/Close`; l.querySelector("input")!.addEventListener("change", (ev) => h.toggleDismiss((ev.target as HTMLInputElement).checked)); r.append(l);
   document.querySelectorAll<HTMLButtonElement>("#modeSeg button").forEach((b) => b.classList.toggle("on", b.dataset.mode === state.mode));
 }
 
-/** Breadcrumb with feature/story selects, plus the keyboard hint box. */
+/** Breadcrumb selects and compact inspect controls. */
 export function renderCrumb(h: NavHandlers): void {
   const c = document.getElementById("crumb")!; c.replaceChildren();
   const b = document.createElement("button"); b.textContent = "Product map"; b.addEventListener("click", h.toMap); c.append(b);
@@ -42,7 +41,8 @@ export function renderCrumb(h: NavHandlers): void {
   }
   const hud = document.getElementById("hud")!;
   const kbd = (k: string): string => `<span class="kbd">${k}</span>`;
-  hud.innerHTML = state.level === "feature" && state.mode === "present" ? `<span>${kbd("Right")}${kbd("Left")} step</span><span>${kbd("[")}${kbd("]")} story</span><span>${kbd("Esc")} back</span>` : state.level === "feature" ? `<span>${kbd("P")} present</span><span>${kbd("[")}${kbd("]")} story</span><span>${kbd("F")} fit</span><span>double-click a screen to open its story</span>` : `<span>${kbd("/")} find</span>`;
+  hud.hidden = state.mode === "present";
+  hud.innerHTML = state.level === "feature" ? `<button id="z-out" class="icon-btn" aria-label="Zoom out">−</button><button id="z-in" class="icon-btn" aria-label="Zoom in">+</button><button id="fit" class="icon-btn" aria-label="Fit">⌗</button><span>${kbd("F")}</span><span>${kbd("[")}${kbd("]")}</span>` : `<span>${kbd("/")}</span>`;
   document.getElementById("nav-back")!.innerHTML = ICON_L;
 }
 

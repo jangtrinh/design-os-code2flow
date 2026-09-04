@@ -42,7 +42,7 @@ export function renderLanes(view: SVGGElement, h: PresentHandlers): { story: Sto
     const active = story.id === activeStory; const missing = story.screens.filter((id) => !byId.has(id)); const exits = new Set(story.exit ?? []);
     const { rows, pos, width, height } = layoutRows(story, y + 60 + PAD / 2);
     const laneH = height + 60 + PAD + 30 + (active ? 40 : 0); const laneW = width + 2 * PAD;
-    const lane = el("g"); lane.append(el("rect", { x: 20, y, width: laneW, height: laneH, rx: 12, class: "lane" }));
+    const lane = el("g"); lane.append(el("rect", { x: 20, y, width: laneW, height: laneH, rx: 16, class: "lane" }));
     const lt = uiScale("ui-scale", 44, y + 14); lt.append(el("text", { x: 0, y: 14, class: "lane-title" }, story.title)); lane.append(lt);
     const metaText = `${story.screens.length} screens · entry ${story.entry}${story.branches?.length ? ` · ${story.branches.length} branch${story.branches.length > 1 ? "es" : ""}` : ""}${story.source ? " · " + story.source : ""}${missing.length ? ` · ${missing.length} not in code: ${missing.join(", ")}` : ""}`;
     lane.append(el("text", { x: 44, y: y + 46, class: "lane-meta", style: missing.length ? "fill:var(--bad)" : "" }, metaText));
@@ -85,7 +85,7 @@ export function renderLanes(view: SVGGElement, h: PresentHandlers): { story: Sto
   const unassigned = f ? routes.filter((r) => featureOf(r.id) === f.id && !inStory.has(r.id)) : [];
   if (unassigned.length) {
     const tray = el("g"); const cols = 6, tw = 160, th = 100, tg = 16; const rows = Math.ceil(unassigned.length / cols); const trayH = state.showTray ? 60 + rows * (th + tg) : 56;
-    tray.append(el("rect", { x: 20, y, width: cols * (tw + tg) + 2 * PAD, height: trayH, rx: 12, class: "lane", style: "stroke-dasharray:6 4" }));
+    tray.append(el("rect", { x: 20, y, width: cols * (tw + tg) + 2 * PAD, height: trayH, rx: 16, class: "lane", style: "stroke-dasharray:6 4" }));
     tray.append(el("text", { x: 44, y: y + 28, class: "lane-title" }, `Not in a story · ${unassigned.length} routes`));
     const toggle = el("text", { x: 44, y: y + 46, class: "lane-meta", style: "cursor:pointer;text-decoration:underline" }, state.showTray ? "hide" : "show tiles"); toggle.addEventListener("click", (ev) => { ev.stopPropagation(); h.onToggleTray(); }); tray.append(toggle);
     if (state.showTray) unassigned.forEach((r, i) => { const tx = 40 + PAD + (i % cols) * (tw + tg), ty = y + 60 + Math.floor(i / cols) * (th + tg); const t = el("g", { class: "tile", transform: `translate(${tx},${ty})` }); t.append(el("rect", { width: tw, height: th, rx: 4 })); const src = D.shotUrl(r.id); if (src) t.append(el("image", { href: src, x: 0, y: 0, width: tw, height: th - 18, preserveAspectRatio: "xMidYMin slice" })); t.append(el("text", { x: 6, y: th - 5 }, routeTitle(r.id).slice(0, 24))); t.addEventListener("click", (ev) => { ev.stopPropagation(); h.onSelect(r); }); tray.append(t); });
@@ -98,10 +98,10 @@ export function renderLanes(view: SVGGElement, h: PresentHandlers): { story: Sto
 export function presenterHud(hud: HTMLElement, story: Story, stepId: string, onStep: (step: number) => void): void {
   const path = storyPath(story); const cur = byId.get(stepId); const via = path[state.step]?.via;
   const inb = D.graph.edges.filter((e) => e.scope === "screen" && e.target === stepId && story.screens.includes(e.source)).sort((a, b) => ({ high: 3, medium: 2, low: 1 }[b.confidence] - { high: 3, medium: 2, low: 1 }[a.confidence]))[0];
-  const title = !cur ? "Missing screen (in the PRD, not in the code)" : cur.kind === "route" ? routeTitle(cur.id) : realTitle(cur.id);
-  const btn = (id: string, label: string, d: string): string => `<button id="${id}" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="${label}"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg></button>`;
+  const title = !cur ? "Missing screen" : cur.kind === "route" ? routeTitle(cur.id) : realTitle(cur.id);
+  const btn = (id: string, label: string, d: string): string => `<button id="${id}" class="icon-btn" aria-label="${label}"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg></button>`;
   hud.hidden = false;
-  hud.innerHTML = `${btn("ph-prev", "Previous step", "M10 3 5 8l5 5")}<span class="counter">${state.step + 1} / ${path.length}</span><span class="step-title"${cur ? "" : ' style="color:var(--bad)"'}>${esc(title)}</span><span class="meta mono">${esc(stepId)}</span>${via || inb ? `<span class="meta">via <b>${esc(via ?? inb.trigger)}</b>${via && !inb ? " · not in code" : ""}</span>` : ""}${btn("ph-next", "Next step", "m6 3 5 5-5 5")}`;
+  hud.innerHTML = `${btn("ph-prev", "Previous step", "M10 3 5 8l5 5")}<span class="counter">${state.step + 1} / ${path.length}</span><span class="step-title"${cur ? "" : ' style="color:var(--bad)"'}>${esc(title)}</span>${via || inb ? `<span class="meta">via <b>${esc(via ?? inb.trigger)}</b></span>` : ""}${btn("ph-next", "Next step", "m6 3 5 5-5 5")}`;
   hud.querySelector("#ph-prev")!.addEventListener("click", (ev) => { ev.stopPropagation(); onStep(Math.max(0, state.step - 1)); });
   hud.querySelector("#ph-next")!.addEventListener("click", (ev) => { ev.stopPropagation(); onStep(Math.min(path.length - 1, state.step + 1)); });
 }
