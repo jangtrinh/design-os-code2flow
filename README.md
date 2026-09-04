@@ -9,7 +9,7 @@ Supported today: Next.js App Router. Other adapters are planned (ADR-0002).
 Requirements: Node 20+, Google Chrome installed (Playwright drives it; nothing is downloaded), and the target app's own dev server.
 
 ```bash
-npm i -g ./design-os-code2flow-0.2.0.tgz    # the tarball from a release (built with `npm pack`); the bin is `code2flow`
+npm i -g design-os-code2flow                 # from npm (bin `code2flow`); or a release tarball
 code2flow --help
 ```
 

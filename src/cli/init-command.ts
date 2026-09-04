@@ -1,8 +1,11 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { CONFIG_FILE } from "../schema/code2flow-config.js";
 
-const DOC_URL = "https://github.com/jang/code2flow/blob/main/docs/config-reference.md";
+const DOC_URL = "https://github.com/jangtrinh/design-os-code2flow/blob/main/docs/config-reference.md";
+/** The skills shipped with the tool (src/ or dist/ are both two levels below the package root). */
+const SHIPPED_SKILLS = join(dirname(fileURLToPath(import.meta.url)), "..", "..", ".claude", "skills");
 const AGENT_SECTION = `## Code2Flow
 
 Code2Flow maps an App Router codebase into a local user-flow canvas.
@@ -25,8 +28,19 @@ function configuredPort(rootDir: string): number {
   return port ? Number(port) : 3000;
 }
 
-/** `code2flow init <repo>` only creates its config and additive guidance; a second run is a no-op. */
-export async function initCommand(repoArg: string, log: (line: string) => void = console.log): Promise<void> {
+/** Copies the shipped agent skills into <repo>/.claude/skills/ unless a skill of that name already exists there. */
+function copySkills(rootDir: string, log: (line: string) => void): void {
+  if (!existsSync(SHIPPED_SKILLS)) { log("init  shipped skills not found next to the CLI; skipped"); return; }
+  for (const name of readdirSync(SHIPPED_SKILLS).filter((n) => n.startsWith("code2flow-"))) {
+    const target = join(rootDir, ".claude", "skills", name, "SKILL.md");
+    if (existsSync(target)) { log(`init  skill ${name} already initialised`); continue; }
+    mkdirSync(dirname(target), { recursive: true }); writeFileSync(target, readFileSync(join(SHIPPED_SKILLS, name, "SKILL.md")));
+    log(`init  added skill .claude/skills/${name}`);
+  }
+}
+
+/** `code2flow init <repo> [--no-skills]` only creates its config, additive guidance and the agent skills; a second run is a no-op. */
+export async function initCommand(repoArg: string, log: (line: string) => void = console.log, opts: { skills?: boolean } = {}): Promise<void> {
   const rootDir = resolve(repoArg); const config = join(rootDir, CONFIG_FILE);
   if (!existsSync(config)) {
     const port = configuredPort(rootDir);
@@ -46,4 +60,5 @@ export async function initCommand(repoArg: string, log: (line: string) => void =
     writeFileSync(join(rootDir, guide), `${existing}${existing && !existing.endsWith("\n") ? "\n" : ""}${existing ? "\n" : ""}${AGENT_SECTION}`);
     log(`init  added Code2Flow guidance to ${guide}`);
   } else log(`init  ${guide} already initialised`);
+  if (opts.skills !== false) copySkills(rootDir, log);
 }

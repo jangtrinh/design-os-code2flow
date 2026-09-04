@@ -80,10 +80,12 @@ describe("run, init, and paths (seams: target repo artifacts and CLI exit codes)
     } finally { sigFx.cleanup(); }
   }, 90_000);
 
-  it("init derives the configured port and is fully idempotent", async () => {
+  it("init derives the configured port, copies the shipped skills, and is fully idempotent", async () => {
     rmSync(join(initFx.dir, "code2flow.config.json"));
     writeFileSync(join(initFx.dir, ".project-agent.md"), "---\nlocalhost_port: 4444\n---\n");
     expect((await command(["init", initFx.dir])).code).toBe(0);
+    expect(existsSync(join(initFx.dir, ".claude", "skills", "code2flow-map-codebase", "SKILL.md"))).toBe(true);
+    expect(existsSync(join(initFx.dir, ".claude", "skills", "code2flow-answer-flow-questions", "SKILL.md"))).toBe(true);
     expect(JSON.parse(readFileSync(join(initFx.dir, "code2flow.config.json"), "utf8"))).toMatchObject({ serverUrl: "http://127.0.0.1:4444", features: [], routeExamples: {} });
     expect(readFileSync(join(initFx.dir, ".gitignore"), "utf8")).toContain(".code2flow/");
     expect(readFileSync(join(initFx.dir, "AGENTS.md"), "utf8")).toContain("## Code2Flow");

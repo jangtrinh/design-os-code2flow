@@ -17,7 +17,7 @@ import { storiesCommand } from "./stories-command.js";
 const USAGE = `code2flow — living user-flow canvas from a web codebase (100% local)
 
   code2flow scan <repo>                          parse routes, screens, transitions → <repo>/.code2flow/graph.json
-  code2flow init <repo>                          add local config and agent guidance (idempotent)
+  code2flow init <repo> [--no-skills]                          add local config and agent guidance (idempotent)
   code2flow run <repo> [--url server|--dev cmd] [--fail-on error|warn|info]  scan, capture, validate, lint, export
   code2flow paths <repo> --from A --to B [--max 1..8] [--shell] [--json]    shortest source-evidenced Screen Node paths
   code2flow paths <repo> --orphans|--dead-ends                             topology findings
@@ -33,7 +33,7 @@ const USAGE = `code2flow — living user-flow canvas from a web codebase (100% l
 
 /** Flags that take a value: `--flag --other` or a trailing `--flag` is a usage error, not silently `true`. */
 const VALUE_FLAGS = new Set(["url", "storage-state", "concurrency", "feature", "out", "from", "to", "max", "dev", "fail-on"]);
-const BOOLEAN_FLAGS = new Set(["orphans", "dead-ends", "shell", "json", "headed", "exit-code"]);
+const BOOLEAN_FLAGS = new Set(["orphans", "dead-ends", "shell", "json", "headed", "exit-code", "no-skills"]);
 
 /** Tiny argv parser: positionals + --flag value / --flag. No dependency needed for nine commands. */
 export function parseArgs(argv: string[]): { command: string; positionals: string[]; flags: Record<string, string | true>; errors: string[] } {
@@ -61,7 +61,7 @@ export async function main(argv: string[]): Promise<number> {
   try {
     switch (command) {
       case "scan": if (!repo) return usage("scan: missing <repo>"); await scanCommand(repo); return 0;
-      case "init": if (!repo) return usage("init: missing <repo>"); await initCommand(repo); return 0;
+      case "init": if (!repo) return usage("init: missing <repo>"); await initCommand(repo, console.log, { skills: flags["no-skills"] !== true }); return 0;
       case "run": if (!repo) return usage("run: missing <repo>"); return await runCommand(repo, VIEWER_DIR, flags);
       case "paths": if (!repo) return usage("paths: missing <repo>"); return await pathsCommand(repo, flags);
       case "snapshot": if (!repo) return usage("snapshot: missing <repo>"); await snapshotCommand(repo, flags); return 0;
