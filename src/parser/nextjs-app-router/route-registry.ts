@@ -1,3 +1,4 @@
+import { knownLocales } from "./locale-samples.js";
 import { readdirSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import type { ScreenNode } from "../../schema/index.js";
@@ -26,22 +27,32 @@ export interface RouteRegistry {
   resolve(path: string): string | null;
 }
 
+/** Leading `[locale]` / `[lang]` segment of a route id. */
+const LOCALE_SEGMENT = /^\/\[(locale|lang|language)\]/;
+
 /** Walks appDir for page files and builds the Route Screen list plus a path resolver. */
-export function buildRouteRegistry(rootDir: string, appDir: string): RouteRegistry {
+export function buildRouteRegistry(rootDir: string, appDir: string, locales: string[] = knownLocales(rootDir)): RouteRegistry {
   const screens: ScreenNode[] = [];
   walk(appDir, appDir, rootDir, screens);
   screens.sort((a, b) => a.id.localeCompare(b.id));
   const matchers = screens.map((s) => ({ id: s.id, regex: routeToRegex(s.id), staticDepth: s.id.split("/").filter((p) => !p.startsWith("[")).length }));
   // Prefer the most static match so "/idp/404" beats "/iam/[...slug]" style overlaps.
   matchers.sort((a, b) => b.staticDepth - a.staticDepth);
+  // next-intl style apps link without the locale prefix (`/bang-gia` → `/[locale]/bang-gia`): try the locale-less shape last.
+  const localeless = screens.filter((s) => LOCALE_SEGMENT.test(s.id)).map((s) => ({ id: s.id, stripped: s.id.replace(LOCALE_SEGMENT, "") || "/" }));
+  const localelessMatchers = localeless.map((m) => ({ id: m.id, regex: routeToRegex(m.stripped), staticDepth: m.stripped.split("/").filter((p) => !p.startsWith("[")).length })).sort((a, b) => b.staticDepth - a.staticDepth);
   return {
     screens,
     resolve(path: string): string | null {
       const clean = path.split("?")[0].split("#")[0].replace(/\/+$/, "") || "/";
       const exact = screens.find((s) => s.id === clean);
       if (exact) return exact.id;
-      const hit = matchers.find((m) => m.regex.test(clean));
-      return hit ? hit.id : null;
+      // `/about` is `/[locale]/about`, not `/[locale]` with locale "about", when the app declares its locales
+      const localeOk = (m: { id: string }): boolean => !LOCALE_SEGMENT.test(m.id) || !locales.length || locales.includes(clean.split("/")[1] ?? "");
+      const hit = matchers.find((m) => m.regex.test(clean) && localeOk(m));
+      if (hit) return hit.id;
+      const bare = localeless.find((m) => m.stripped === clean) ?? localelessMatchers.find((m) => m.regex.test(clean));
+      return bare ? bare.id : null;
     },
   };
 }

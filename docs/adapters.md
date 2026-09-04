@@ -38,6 +38,11 @@ Catch-all routes intentionally do not resolve ordinary unmatched literal links: 
 route ownership through arbitrary component composition, computed navigation, hash routers,
 or every possible `useSearchParams` data flow.
 
+### Locale segments and prop values
+
+- A `[locale]` / `[lang]` segment is sampled with the app`s default locale: `defaultLocale` (or the first of `locales`) from `src/i18n/routing.ts`-style next-intl routing files, else the first `messages/<locale>.json`. Counters: `locale-default-from-routing`, `locale-default-guessed-first`, `locale-sample-inferred`. Routes with further params (`/[locale]/[product]`) stay `needs-sample` until a captured page links to one. Set `locale` in `code2flow.config.json` when the inferred default is wrong (for example when the default locale redirect-loops locally). Links written without the prefix (`/bang-gia`) resolve to the `[locale]` route, and a first segment only counts as a locale when the app declares it.
+- A `to` / `href` prop whose value has no path shape (no `/`, `#`, `?`, `.`, `:` — e.g. `<SectionDivider to="brand-cream" />`) is a token, not a link: counted as `prop-value-not-a-path`, never a broken link.
+
 ## Hover states
 
 The Next.js App Router adapter emits a nested State Screen for literal Radix-style

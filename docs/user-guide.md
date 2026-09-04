@@ -227,6 +227,7 @@ If the agent cannot find the skill: copy the package's `.claude/skills/` directo
 | No adapter detected | The target does not match a shipped Next.js App Router, React Router, or static HTML adapter. | Check [adapters](adapters.md) and run the tool from the app root. |
 | Screenshots missing | A capture failed, has no URL, is login-gated, or was clipped at the cap. | Read `.code2flow/run-summary.json` and lint output; use `login` or fix the app server. |
 | Dynamic route without a sample | Code2Flow knows `/products/[slug]` but not a concrete product URL. | Add a full URL to `routeExamples` in `code2flow.config.json`. |
+| `[locale]` routes fail with a redirect loop | The app`s default locale is rewritten by its middleware locally (`ERR_TOO_MANY_REDIRECTS`). | Set `"locale": "en"` (a locale that answers 200) in `code2flow.config.json` and run again. |
 | Export split around 14 MB | One offline HTML would be too large to share comfortably. | Send the per-feature HTML files; each opens offline and retains the whole graph. |
 
 For configuration details, read the [configuration reference](config-reference.md). For capture and Transition Confidence rules, read [confidence and capture](confidence-and-capture.md).

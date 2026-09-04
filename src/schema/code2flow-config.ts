@@ -35,6 +35,8 @@ export interface LoginConfig {
 }
 
 export interface Code2FlowConfig {
+  /** locale used to sample `[locale]` routes when the inferred default is wrong (e.g. the default locale redirect-loops locally) */
+  locale?: string;
   /** scripted login for apps behind auth (see LoginConfig) */
   login?: LoginConfig;
   features?: FeatureConfig[];

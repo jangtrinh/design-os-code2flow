@@ -1,4 +1,4 @@
-import { featureIdFor } from "../schema/feature-match.js";
+import { featureIdFor, routeTopSegment, withoutLocaleSegment } from "../schema/feature-match.js";
 import type { ScreenNode } from "../schema/index.js";
 import type { Feature, Story, StoryStep, ViewerData, ViewState } from "./types.js";
 
@@ -37,15 +37,16 @@ function deriveStoryScreens(st: Story): string[] {
 
 /** Default features when the config declares none: top URL segment, plus `access` (sign-in-like) and `account` (root, settings, notifications). */
 export function defaultFeatures(routeIds: string[]): Feature[] {
-  const segs = [...new Set(routeIds.map((r) => r.split("/")[1]).filter(Boolean))].sort();
+  const segs = [...new Set(routeIds.map(routeTopSegment).filter(Boolean))].sort();
+  const localePrefixed = routeIds.some((r) => withoutLocaleSegment(r) !== r);
   const access = routeIds.filter((r) => /sign-?in|log-?in|welcome|launchpad|403|404|onboard/i.test(r));
-  const account = routeIds.filter((r) => r === "/" || /^\/(settings|notifications|profile|account)(\/|$)/.test(r));
+  const account = routeIds.filter((r) => withoutLocaleSegment(r) === "/" || /^\/(settings|notifications|profile|account)(\/|$)/.test(withoutLocaleSegment(r)));
   const specialised = new Set([...access, ...account]);
   const out: Feature[] = [];
   if (access.length) out.push({ id: "access", title: "Access", match: access, order: 0 });
   segs.forEach((s, i) => {
-    const segmentRoutes = routeIds.filter((route) => route.split("/")[1] === s);
-    if (!/^(settings|notifications|profile|account)$/.test(s) && !segmentRoutes.every((route) => specialised.has(route))) out.push({ id: s, title: humanize("/" + s), match: [`/${s}/**`], order: i + 1 });
+    const segmentRoutes = routeIds.filter((route) => routeTopSegment(route) === s);
+    if (!/^(settings|notifications|profile|account)$/.test(s) && !segmentRoutes.every((route) => specialised.has(route))) out.push({ id: s.replace(/[[\]]/g, "") || s, title: humanize("/" + s), match: localePrefixed ? [`/${s}/**`, `/[locale]/${s}/**`, `/[lang]/${s}/**`] : [`/${s}/**`], order: i + 1 }); // `[product]` → id "product", title "Product"
   });
   if (account.length) out.push({ id: "account", title: "Account & shell", match: [...new Set(account)], order: 99 });
   return out;
@@ -71,7 +72,7 @@ export function storyFeature(st: Story): string { return st.feature ?? featureOf
 export function normalizeSteps(steps: (string | StoryStep)[]): StoryStep[] { return steps.map((s) => (typeof s === "string" ? { screen: s } : s)); }
 export function storyPath(st: Story): StoryStep[] { return normalizeSteps(st.steps?.length ? st.steps : st.screens); }
 
-export function humanize(id: string): string { const seg = id.split("/").filter(Boolean).pop() ?? "home"; return seg.replace(/[-_[\].]+/g, " ").replace(/^\w/, (c) => c.toUpperCase()); }
+export function humanize(id: string): string { const seg = id.split("/").filter(Boolean).pop() ?? "home"; return seg.replace(/[-_[\].]+/g, " ").trim().replace(/\s+/g, " ").replace(/^\w/, (c) => c.toUpperCase()); }
 export function routeTitle(id: string): string { const t = D.titles[id]; return t?.h1 || byId.get(id)?.title || humanize(id); }
 export function realTitle(id: string): string {
   const t = D.titles[id] ?? { h1: "", dialogTitle: "", activeTab: "" };

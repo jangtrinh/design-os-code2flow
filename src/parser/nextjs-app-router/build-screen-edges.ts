@@ -95,6 +95,8 @@ interface Target { id: string; resolved: boolean; confidence: Confidence; patter
 function targetFor(c: ResolvedHref, sourceId: string, screen: ScreenNode, ctx: EdgeBuildContext, call: NavCall, seen: Set<string>): Target | null {
   const href = c.value;
   if (href === "" || href.startsWith("#")) { bump(ctx.counters, call.file, "anchor-hash"); return null; }
+  // `<SectionDivider from="brand" to="brand-cream" />`: a `to`/`href` prop whose value has no path shape is a token, not a link.
+  if (call.kind === "prop-href" && !/[\/#?.:]/.test(href)) { bump(ctx.counters, call.file, "prop-value-not-a-path"); return null; }
   if (EXTERNAL.test(href)) return { id: `external:${href}`, resolved: false, confidence: c.confidence };
   if (isLocalAssetHref(ctx.rootDir, href, call.file)) { bump(ctx.counters, call.file, "asset-link"); return null; }
   if (href.startsWith("${_}") && screen.dynamic && call.kind === "link") {

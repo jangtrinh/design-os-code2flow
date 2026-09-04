@@ -61,6 +61,10 @@ Feature ids (in either file) must match `^[a-z0-9][a-z0-9._-]*$` — they end up
 - Route Screen: the route path as in the App Router tree: `/users`, `/users/[id]`, `/docs/[...parts]`.
 - State Screen: parent route + the query that addresses it: `/users?drawer=edit-roles`, `/checkout?step=review`, `/orders?tab=archived`; overlays toggled by local state use `#`: `/invite#edit-roles-drawer`.
 
+## locale
+
+`"locale": "en"` — the locale used to fill a `[locale]` / `[lang]` segment when sampling dynamic routes. Default: the app`s `defaultLocale` from its next-intl routing file, else the first `messages/<locale>.json`.
+
 ## login
 
 Scripted sign-in for apps behind authentication. Only the NAMES of the environment variables live in the config; values are read from the environment when `login` or `run` executes and are never written anywhere.
