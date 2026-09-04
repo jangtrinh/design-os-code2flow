@@ -94,11 +94,14 @@ describe("run, init, and paths (seams: target repo artifacts and CLI exit codes)
   });
 
   it("paths reports a source-evidenced shortest route and rejects unknown screen ids", async () => {
-    const found = await command(["paths", "fixtures/synthetic/app-router-basic", "--from", "/", "--to", "/docs/[...parts]"]);
+    const pathsFx = copyFixture("paths"); const repo = pathsFx.dir; // own copy + own scan: the in-repo fixture has no graph.json on a clean checkout
+    const scanned = await command(["scan", repo]); expect(scanned.code).toBe(0);
+    const found = await command(["paths", repo, "--from", "/", "--to", "/docs/[...parts]"]);
     expect(found.code).toBe(0); expect(found.lines.join("\n")).toMatch(/\/ -\[.*\]-> \/pricing[\s\S]*Checkout.*\/docs\/\[\.\.\.parts\]/);
-    const unknown = await command(["paths", "fixtures/synthetic/app-router-basic", "--from", "/wat", "--to", "/"]);
+    const unknown = await command(["paths", repo, "--from", "/wat", "--to", "/"]);
     expect(unknown.code).toBe(2); expect(unknown.lines.join("\n")).toMatch(/closest ids/);
-    const invalidMax = await command(["paths", "fixtures/synthetic/app-router-basic", "--from", "/", "--to", "/pricing", "--max", "abc"]);
+    const invalidMax = await command(["paths", repo, "--from", "/", "--to", "/pricing", "--max", "abc"]);
     expect(invalidMax.code).toBe(2); expect(invalidMax.lines).toEqual(["paths: --max must be a positive integer no greater than 8"]);
+    pathsFx.cleanup();
   });
 });
