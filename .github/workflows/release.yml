@@ -1,0 +1,26 @@
+name: release
+# Publishes to npm with trusted publishing (OIDC): no token in the repo.
+# One-time setup on npmjs.com → package → Settings → Trusted publisher: GitHub Actions,
+# repository jangtrinh/design-os-code2flow, workflow release.yml, environment (none).
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+  id-token: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, registry-url: "https://registry.npmjs.org" }
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx vitest run
+      - name: version must match the tag
+        run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+      - run: npm publish --provenance --access public
+      - name: GitHub release with the tarball
+        run: npm pack && gh release create "${GITHUB_REF_NAME}" ./*.tgz --title "${GITHUB_REF_NAME}" --generate-notes
+        env: { GH_TOKEN: "${{ github.token }}" }

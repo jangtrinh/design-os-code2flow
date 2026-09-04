@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code2Flow</title>
+<link rel="stylesheet" href="./viewer.css">
+</head>
+<body>
+<header><button class="nav-back icon-btn" style="min-height:44px;min-width:44px" id="nav-back" aria-label="Back"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button><h1 id="product">Code2Flow</h1><div class="crumb" id="crumb"></div><button class="nav-search" id="nav-search"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg><span>Find a screen or story</span><span class="kbd">⌘K</span></button>
+
+<div class="seg" id="modeSeg"><button data-mode="inspect" class="on">Inspect</button><button data-mode="present">Present</button></div></header>
+<aside class="rail" id="rail"></aside>
+<div id="stage"><svg id="svg" role="img" aria-label="Flow pages"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker></defs><g id="view"></g></svg>
+<div class="hint hint-keys" id="hud"></div><div class="presenter-hud" id="phud" hidden></div>
+<div class="toolbar"><button id="z-out" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="Zoom out"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10"/></svg></button><button id="z-in" class="icon-btn" style="min-height:44px;min-width:44px" aria-label="Zoom in"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg></button><button id="fit">Fit view</button></div></div>
+<div id="palette" hidden><div class="box"><input id="palette-input" type="search" placeholder="Type a route, title, story or feature" aria-label="Find a screen or story" autocomplete="off"><ul class="results" id="palette-results" role="listbox" aria-label="Results"></ul></div></div>
+<div id="lightbox" hidden><div class="scroller"><img alt="Full-size screenshot" width="1440" height="900"></div><div class="caption"></div></div>
+<div id="drawer"><div class="inner" id="drawer-body"></div></div>
+<script type="module" src="./viewer.js"></script>
+</body>
+</html>

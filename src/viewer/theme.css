@@ -1,0 +1,131 @@
+/* Code2Flow viewer theme — light, neutral, tokens per design-system/tokens.json */
+:root{--bg:#F4F4F3;--surface:#FFFFFF;--raised:#ECECEA;--border:#D2D2CF;--accent:#111111;--accent-hover:#333333;--accent-soft:#E6E6E3;--text:#161616;--text2:#4D4D4B;--muted:#7C7C79;--node:#FFFFFF;--node-border:#BDBDB9;--edge-high:#161616;--edge-medium:#8A8A86;--warn:#4D4D4B;--bad:#B91C1C;--bad-soft:#F9DEDE;--dim:.16;--r-sm:4px;--r-md:8px;--r-lg:12px;--shadow:0 6px 18px rgba(22,22,22,.10),0 1px 2px rgba(22,22,22,.08)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 "Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;height:100dvh;display:grid;grid-template-columns:264px 1fr auto;grid-template-rows:56px 1fr;overflow:clip}
+header{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--surface)}
+header h1{font-size:17px;font-weight:600;margin:0;letter-spacing:-.01em;white-space:nowrap}
+header{flex-wrap:nowrap;min-width:0}
+.crumb{white-space:nowrap;min-width:0}
+.nav-search span:first-of-type{white-space:nowrap}
+.crumb{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--text2)}
+.crumb button{background:none;border:0;color:var(--text2);font:inherit;cursor:pointer;padding:4px 6px;border-radius:var(--r-sm)}
+.crumb b{color:var(--text);font-weight:600}
+.crumb svg{width:14px;height:14px;color:var(--muted)}
+.crumb select{appearance:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 26px 4px 8px;font:600 14px "Be Vietnam Pro",sans-serif;color:var(--text);cursor:pointer;max-width:320px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23161616' stroke-width='2'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;background-size:12px}
+.icon-btn{min-height:44px;min-width:44px;padding:0}
+.nav-back{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text)}
+.nav-back svg{width:14px;height:14px}
+.nav-search{display:inline-flex;align-items:center;gap:8px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r-md);padding:0 10px;height:36px;font:14px "Be Vietnam Pro",sans-serif;color:var(--text2);cursor:pointer;margin-left:8px}
+.nav-search svg{width:14px;height:14px}
+.nav-search .kbd{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 6px;font:12px "JetBrains Mono",Menlo,monospace;color:var(--text)}
+#palette:not([hidden]){display:flex}
+#palette{position:fixed;inset:0;background:rgba(22,22,22,.35);z-index:20;align-items:flex-start;justify-content:center;padding-top:12vh}
+#palette .box{width:min(640px,92vw);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow);overflow:hidden}
+#palette input{width:100%;border:0;border-bottom:1px solid var(--border);padding:14px 16px;font:16px "Be Vietnam Pro",sans-serif;color:var(--text);background:var(--surface);outline:none}
+#palette .results{max-height:50vh;overflow:auto;list-style:none;margin:0;padding:0}
+#palette .result{display:flex;gap:12px;align-items:center;padding:10px 16px;cursor:pointer;border:0;background:none;width:100%;text-align:left;font:14px "Be Vietnam Pro",sans-serif;color:var(--text)}
+#palette .result.on{background:var(--raised)}
+#palette .result .meta{color:var(--muted);font-size:12px;margin-left:auto;white-space:nowrap}
+#palette .result .mono{color:var(--text2)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin-left:auto}
+.seg button{background:var(--surface);border:0;color:var(--text2);font:600 13px "Be Vietnam Pro",sans-serif;padding:8px 14px;cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+.seg button:focus-visible,.crumb button:focus-visible,.toolbar button:focus-visible,.rail-item:focus-visible,.frame:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint-keys{display:flex;gap:14px;align-items:center;color:var(--text2);font-size:13px}
+.hint-keys .kbd{background:var(--raised);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 6px;font:12px "JetBrains Mono",Menlo,monospace;color:var(--text)}
+.hint-keys .meta{font-variant-numeric:tabular-nums}
+aside{border-right:1px solid var(--border);background:var(--surface);overflow:auto;padding:12px 0}
+.rail .legend-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:12px 20px 6px;font-weight:600}
+.rail-item{display:flex;align-items:center;gap:10px;padding:8px 20px;cursor:pointer;color:var(--text);font-weight:500;font-size:15px;border:0;background:none;width:100%;text-align:left;font-family:inherit}
+.rail-item.on{background:var(--accent-soft);color:var(--accent)}
+.rail-item .dot{width:10px;height:10px;border-radius:999px;flex:none}
+.rail-item .counter{margin-left:auto;font:12px "JetBrains Mono",Menlo,monospace;color:var(--muted)}
+.rail-item.nav-story{padding-left:40px;font-size:14px;font-weight:400;color:var(--text2)}
+.rail-item.nav-story.on{color:var(--accent)}
+.rail .option-label{display:flex;gap:10px;align-items:center;padding:8px 20px;font-size:14px;color:var(--text2);cursor:pointer}
+.rail-item svg{width:16px;height:16px}
+#stage{position:relative;overflow:clip;background:var(--bg);cursor:grab}
+#stage.dragging{cursor:grabbing}
+svg#svg{width:100%;height:100%;display:block}
+.frame rect.bg{fill:#FCFCFC;stroke:var(--node-border);stroke-width:1.2}
+#view{--tx:1}
+.ui-scale{transform-box:fill-box;transform-origin:left top}
+.ui-scale.center{transform-origin:center}
+.ui-scale.right{transform-origin:right top}
+.frame .eyebrow{font:700 10px "Be Vietnam Pro",sans-serif;fill:var(--muted);letter-spacing:.04em}
+.frame .title{font:700 15px "Be Vietnam Pro",sans-serif;fill:var(--text);letter-spacing:-.01em}
+.frame .title .state-part{fill:#4D4D4B}
+.frame .shot-bg{fill:#FFFFFF;stroke:#E5E5E3;stroke-width:1}
+
+.empty-state{position:absolute;inset:0;margin:0;display:grid;place-items:center;padding:40px;text-align:center;max-width:none;color:var(--text2);font-size:15px}
+.frame.selected rect.bg,.frame.step rect.bg{stroke:var(--accent);stroke-width:3}
+.frame text{fill:var(--text);font:600 14px "Be Vietnam Pro",sans-serif;pointer-events:none}
+.frame .path{font:11px "JetBrains Mono",Menlo,monospace;fill:var(--text2)}
+.frame .chip{font:600 11px "Be Vietnam Pro",sans-serif;fill:var(--text2)}
+.frame .chipbg{fill:var(--raised);stroke:var(--border)}
+.frame .chipbg.warn{fill:var(--surface);stroke:var(--muted);stroke-dasharray:3 2}.frame .chip.warn{fill:var(--text)}
+.frame .chipbg.bad{fill:var(--bad-soft);stroke:var(--bad)}.frame .chip.bad{fill:var(--bad)}
+.frame .fbar{fill:var(--raised)}
+.frame .shot{pointer-events:none}
+.state rect.bg{fill:var(--surface);stroke:var(--accent);stroke-dasharray:0}
+.stub rect.bg{fill:var(--raised);stroke:var(--border);stroke-dasharray:4 3}
+.stub.bad rect.bg{fill:var(--bad-soft);stroke:var(--bad)}
+.stub.bad text{fill:var(--bad)}
+.stub text{font:600 12px "Be Vietnam Pro",sans-serif}
+.edge{fill:none;stroke:var(--edge-high);stroke-width:2}
+.edge.medium{stroke:var(--edge-medium)}
+.edge.low{stroke:var(--edge-medium);stroke-dasharray:6 4}
+.edge.return{stroke:var(--muted);stroke-width:1.2;opacity:.75}
+.edge.missing{stroke:var(--bad);stroke-dasharray:2 4;stroke-linecap:round}
+.edge.asserted{stroke:var(--bad);stroke-width:1.5;stroke-dasharray:6 4} /* step named by the PRD with no detected transition */
+.edge.selected{stroke-width:4}
+.hit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer}
+.pill{font:500 12px "Be Vietnam Pro",sans-serif;fill:var(--text);pointer-events:none}
+.pill-bg{fill:var(--surface);stroke:var(--border)}
+.pill-bg.low{stroke:var(--edge-medium);stroke-dasharray:4 3}
+.faded{opacity:var(--dim)}
+.lane{fill:rgba(22,22,22,.03);stroke:rgba(22,22,22,.18)}
+.lane-title{font:600 15px "Be Vietnam Pro",sans-serif;fill:var(--text)}
+.lane-meta{font:12px "Be Vietnam Pro",sans-serif;fill:var(--text2)}
+.tile rect{fill:var(--surface);stroke:var(--node-border)}
+.tile text{font:11px "JetBrains Mono",Menlo,monospace;fill:var(--text2)}
+.card{cursor:pointer}
+.card rect.bg{fill:var(--surface);stroke:var(--node-border);stroke-width:1.2}
+.card .t{font:600 18px "Be Vietnam Pro",sans-serif;fill:var(--text)}
+.card .n{font:13px "Be Vietnam Pro",sans-serif;fill:var(--text2)}
+.card .big{font:600 30px "Be Vietnam Pro",sans-serif;fill:var(--text)}
+.xedge{fill:none;stroke:var(--muted);stroke-width:1.5}
+.toolbar{position:absolute;right:16px;bottom:16px;display:flex;gap:4px;background:var(--surface);border-radius:var(--r-md);padding:4px;box-shadow:var(--shadow)}
+.toolbar button{background:transparent;border:0;color:var(--text);font:600 13px "Be Vietnam Pro",sans-serif;padding:0 12px;height:44px;min-width:44px;justify-content:center;border-radius:var(--r-sm);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.toolbar svg{width:14px;height:14px}
+#drawer{width:0;border-left:1px solid var(--border);background:var(--surface);overflow:auto;transition:width .15s}
+#drawer.open{width:520px}
+#drawer .inner{width:520px;padding:20px;display:grid;gap:14px}
+#drawer h3{margin:0;font-size:16px;font-weight:600}
+#drawer .meta-grid{display:grid;grid-template-columns:100px 1fr;gap:6px 12px;margin:0;font-size:13px}
+#drawer .meta-grid dt{color:var(--muted)}#drawer .meta-grid dd{margin:0;word-break:break-word}
+.mono{font-family:"JetBrains Mono",Menlo,monospace;font-size:12px}
+pre.code{background:var(--raised);border:1px solid var(--border);border-radius:var(--r-md);padding:8px 10px;margin:0;white-space:pre-wrap;word-break:break-all;font:12px "JetBrains Mono",Menlo,monospace}
+.chip{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600}
+.chip.high{background:var(--accent);color:#fff}
+.chip.medium{background:var(--raised);color:var(--text)}
+.chip.low{background:var(--surface);color:var(--text);border:1px dashed var(--muted)}
+.meta-list{display:grid;gap:4px}
+.meta-list button{text-align:left;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:var(--r-md);padding:8px 10px;cursor:pointer;font:13px "Be Vietnam Pro",sans-serif}
+.meta-list .meta{color:var(--text2);font-size:12px}
+.shot-full{width:100%;height:auto;border:1px solid var(--border);border-radius:var(--r-md);cursor:zoom-in;display:block}
+#lightbox:not([hidden]){display:flex}
+#lightbox{position:fixed;inset:0;background:rgba(23,32,25,.88);z-index:10;cursor:zoom-out;padding:20px;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+#lightbox .scroller{max-width:100%;max-height:calc(100dvh - 70px);overflow:auto;border-radius:var(--r-md);background:#fff;cursor:default}
+#lightbox img{display:block;max-width:none;border:1px solid var(--border)}
+#lightbox .caption{font:13px "JetBrains Mono",monospace;color:var(--text);background:var(--surface);border-radius:var(--r-sm);padding:4px 10px}
+.hint{position:absolute;left:16px;bottom:16px;font-size:13px;color:var(--text2);background:var(--surface);border-radius:var(--r-md);padding:8px 12px;max-width:520px;box-shadow:var(--shadow)}
+.hint.hint-keys{display:flex;gap:12px;flex-wrap:wrap;max-width:420px}
+.presenter-hud{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;display:flex;align-items:center;gap:14px;background:var(--surface);border-radius:var(--r-lg);padding:8px 12px;box-shadow:var(--shadow);font-size:14px}
+.presenter-hud .counter{font:600 13px "JetBrains Mono",monospace;color:var(--accent);font-variant-numeric:tabular-nums}
+.presenter-hud .step-title{font-weight:600}
+.presenter-hud .meta{color:var(--text2);font-size:13px}
+.presenter-hud button{background:var(--accent);color:#fff;border:0;border-radius:var(--r-md);padding:0 12px;height:44px;min-width:44px;justify-content:center;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font:600 13px "Be Vietnam Pro",sans-serif}
+.presenter-hud button svg{width:14px;height:14px}
+@media (hover: hover){#palette .result:hover{background:var(--raised)}.crumb button:hover{color:var(--text);background:var(--raised)}.rail-item:hover{background:var(--raised)}.card:hover rect.bg{stroke:var(--accent)}.toolbar button:hover{background:var(--raised)}.meta-list button:hover{border-color:var(--accent)}.presenter-hud button:hover{background:var(--accent-hover)}}
+@media (prefers-reduced-motion: reduce){#drawer{transition:none}}

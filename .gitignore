@@ -1,0 +1,50 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+/dist
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# BRV local context tree
+.brv/
+
+# build & parser output
+dist/
+.code2flow/
+node_modules/
+
+# viewer bundle output
+out/
+
+# local agent memory and release tarballs
+.claude/agent-memory/
+*.tgz
+
+# kept out of the public repo: internal plans and the private benchmark
+plans/
+fixtures/benchmarks/

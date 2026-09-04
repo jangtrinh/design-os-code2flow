@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-03T03:46:45Z",
+  "report": {
+    "schema_version": 1,
+    "roots": [
+      "/Users/jang/Products/code2flow"
+    ],
+    "summary": {
+      "total": 0,
+      "by_risk": {},
+      "by_language": {},
+      "findings": 0,
+      "executable_only": 0
+    },
+    "scripts": []
+  }
+}

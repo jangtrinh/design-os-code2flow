@@ -1,0 +1,1 @@
+{ "routeExamples": { "/docs/[...parts]": ["/docs/getting-started/install"], "/nope/[x]": ["/nope/1"], "/blog/[slug]": ["not-a-path", "/docs/wrong-route"] } }
