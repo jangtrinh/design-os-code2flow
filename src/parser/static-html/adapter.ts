@@ -10,9 +10,9 @@ import {
 import {
   collectHtmlLinks,
   edgeForHtmlLink,
-  locationEdgesForHtmlFile,
   type HtmlFile,
 } from "./screen-edges.js";
+import { locationEdgesForHtmlFile } from "./script-navigation.js";
 import { dedupeShellEdges, sharedShellKeys } from "./shell-navigation.js";
 
 export interface StaticHtmlDetection {

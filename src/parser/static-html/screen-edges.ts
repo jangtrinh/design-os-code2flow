@@ -1,7 +1,7 @@
-import { posix } from "node:path";
 import type { ActionEdge, Counters, ScreenNode } from "../../schema/index.js";
 import type { RouteResolver } from "../adapter-types.js";
 import { htmlTagLabel, scanHtmlTags } from "./html-tag-scanner.js";
+import { targetForHtmlHref } from "./html-link-targets.js";
 import { isInHeader } from "./shell-navigation.js";
 
 export interface HtmlFile {
@@ -21,8 +21,6 @@ export interface CollectedLink {
   link: HtmlLink;
   key: string;
 }
-const externalHref = /^(https?:)?\/\/|^(mailto|tel):/;
-
 /** Collects literal links, form actions, and dialog-opening button transitions. */
 export function collectHtmlLinks(
   file: HtmlFile,
@@ -121,38 +119,6 @@ export function edgeForHtmlLink(
   };
 }
 
-/** Finds literal location.href and window.open navigation in one HTML source file. */
-export function locationEdgesForHtmlFile(
-  file: HtmlFile,
-  resolver: RouteResolver,
-  nextId: () => string,
-): ActionEdge[] {
-  const edges: ActionEdge[] = [];
-  const navigation =
-    /(?:location\.href|window\.open)\s*(?:=|\()\s*["']([^"']+)["']/g;
-  for (const match of file.source.matchAll(navigation)) {
-    const href = match[1];
-    const target = resolver.resolve(href) ?? `missing:${href}`;
-    const index = match.index ?? 0;
-    edges.push({
-      id: nextId(),
-      source: file.route,
-      target,
-      trigger: "script navigation",
-      confidence: "high",
-      pattern: "location-href-literal",
-      evidence: {
-        file: file.file,
-        line: file.source.slice(0, index).split("\n").length,
-      },
-      scope: "screen",
-      resolved: !target.startsWith("missing:"),
-      href,
-    });
-  }
-  return edges;
-}
-
 function createLink(
   file: HtmlFile,
   href: string,
@@ -178,60 +144,4 @@ function dialogIdFromOnClick(onclick: string): string | null {
     (onclick.match(/(?:getElementById|querySelector)\(['"]#?([^'"]+)/) ??
       [])[1] ?? null
   );
-}
-function targetForHtmlHref(
-  file: HtmlFile,
-  href: string,
-  resolver: RouteResolver,
-  stateScreens: Map<string, ScreenNode>,
-  counters: Counters,
-): string | null {
-  if (href.startsWith("#")) {
-    const id = `${file.route}${href}`;
-    if (stateScreens.has(id)) return id;
-    incrementCounter(counters, file.file, "anchor-hash");
-    return null;
-  }
-  if (externalHref.test(href)) {
-    incrementCounter(
-      counters,
-      file.file,
-      href.startsWith("mailto:") ? "mailto-link" : "external-link",
-    );
-    return `external:${href}`;
-  }
-  const path = resolveHtmlHref(file.route, href);
-  const route = resolver.resolve(path);
-  if (!route) return `missing:${path.split(/[?#]/)[0]}`;
-  const tab = path.match(/[?&]tab=([^&#]+)/);
-  if (!tab) return route;
-  const value = decodeURIComponent(tab[1]);
-  const id = `${route}?tab=${value}`;
-  if (!stateScreens.has(id))
-    stateScreens.set(id, {
-      id,
-      kind: "tab",
-      parentScreenId: route,
-      label: `${value} tab`,
-      filePath:
-        resolver.screens.find((screen) => screen.id === route)?.filePath ??
-        file.file,
-    });
-  return id;
-}
-function resolveHtmlHref(route: string, href: string): string {
-  return (
-    href.startsWith("/")
-      ? href
-      : posix.normalize(posix.join(posix.dirname(route), href))
-  ).replace(/\.html(?=\?|#|$)/, "");
-}
-function incrementCounter(
-  counters: Counters,
-  file: string,
-  counter: string,
-): void {
-  const perFile = counters[file] ?? {};
-  perFile[counter] = (perFile[counter] ?? 0) + 1;
-  counters[file] = perFile;
 }
