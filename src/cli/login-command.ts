@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { launchBrowser, resolvePlaywright } from "../snapshot/playwright-runtime.js";
 import { loadConfig, type LoginConfig } from "../schema/code2flow-config.js";
@@ -14,6 +14,14 @@ const DEFAULT_SELECTORS = { email: "input[type=email], input[name*=email i], inp
 const SUCCESS_TIMEOUT_MS = 20_000;
 
 export function storageStatePath(rootDir: string): string { return join(rootDir, ".code2flow", "storage-state.json"); }
+
+/** The saved session is a live credential: owner-only file in an owner-only dir, and a loud warning when the repo does not ignore it. */
+function protectStorageState(rootDir: string, out: string, log: (line: string) => void): void {
+  try { chmodSync(join(rootDir, ".code2flow"), 0o700); chmodSync(out, 0o600); } catch { /* non-POSIX filesystems */ }
+  const gitignore = join(rootDir, ".gitignore");
+  const ignored = existsSync(gitignore) && /^\s*\/?\.code2flow\/?\s*$/m.test(readFileSync(gitignore, "utf8"));
+  if (!ignored) log(`login  WARNING: ${rootDir}/.gitignore does not list .code2flow/ — the saved session could be committed; run \`code2flow init ${rootDir}\``);
+}
 
 /** Which env var (if any) a scripted login would miss; the name only, never the value. */
 export function missingLoginEnv(login: LoginConfig): string | null { return [login.emailEnv, login.passwordEnv].find((name) => !process.env[name]) ?? null; }
@@ -41,7 +49,7 @@ export async function scriptedLogin(rootDir: string, baseUrl: string, login: Log
       if (Date.now() > deadline) throw new LoginError(`no navigation to ${target ?? "another page"} within ${SUCCESS_TIMEOUT_MS / 1000} s`);
       await page.waitForTimeout(250);
     }
-    await page.waitForTimeout(500); await ctx.storageState({ path: out });
+    await page.waitForTimeout(500); await ctx.storageState({ path: out }); protectStorageState(rootDir, out, log);
     const state = JSON.parse(readFileSync(out, "utf8")) as { cookies?: unknown[]; origins?: { localStorage?: unknown[] }[] };
     if (!(state.cookies?.length || state.origins?.some((o) => o.localStorage?.length))) throw new LoginError("signed in but no session was saved (no cookie or localStorage entry)");
   } finally { await browser.close(); }
@@ -57,7 +65,7 @@ async function manualLogin(rootDir: string, url: string, log: (line: string) => 
   const page = await ctx.newPage(); await page.goto(url, { waitUntil: "load", timeout: 60000 });
   log(`login  sign in in the browser window, then press Enter here (or close the window) to save the session → ${out}`);
   await new Promise<void>((done) => { const onEnter = (): void => { process.stdin.off("data", onEnter); done(); }; process.stdin.on("data", onEnter); page.waitForEvent("close", { timeout: 0 }).then(() => done(), () => done()); });
-  await ctx.storageState({ path: out }); await browser.close();
+  await ctx.storageState({ path: out }); await browser.close(); protectStorageState(rootDir, out, log);
   log(`login  saved ${out}; \`code2flow snapshot\` will use it (or pass --storage-state)`);
   return out;
 }

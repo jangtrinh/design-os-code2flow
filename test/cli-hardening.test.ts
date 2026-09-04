@@ -24,6 +24,9 @@ describe("CLI hardening (seams: process exit codes, HTTP responses, graph.json)"
       expect((await get("/data/graph.json")).status).toBe(200); // still alive
       expect((await get("/data/graph.json", "evil.example:4317")).status).toBe(403); // DNS-rebinding guard
       expect((await get("/data/..%2F..%2Fpackage.json")).status).toBe(404); // basename() confines the lookup
+      writeFileSync(join(FIXTURE, ".code2flow", "storage-state.json"), "{}"); writeFileSync(join(FIXTURE, ".code2flow", "run-summary.json"), "{}");
+      expect((await get("/data/storage-state.json")).status).toBe(404); // the saved login session is never served (2026-09-04 audit C2)
+      expect((await get("/data/run-summary.json")).status).toBe(404); // only the viewer's own data files
       expect((await get("/shots/%E0%A4%A")).status).toBe(400);
       expect(Object.values(((await get("/data/info.json")).json() as { shotIndex: Record<string, string> }).shotIndex)[0]).toMatch(/^[0-9a-f]{16}$/); // hash keys, not positions
     } finally { srv.close(); }

@@ -12,7 +12,7 @@ const fx = copyFixture("viewer"); const FIXTURE = fx.dir; const DATA = join(FIXT
 const JPEG = Buffer.from("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==", "base64");
 /** v2 manifest: main path with `via`, one branch, an exit, and a screen the code lacks (UC-04/UC-07). */
 const MANIFEST = { version: 2, features: [{ id: "shop", title: "Shop", match: ["/", "/orders/**", "/docs/**"] }, { id: "account", title: "Product catalog administration", match: ["/pricing"] }], stories: [
-  { id: "buy", title: "Buy a plan", entry: "/", exit: ["/orders?drawer=details"], screens: ["/", "/pricing", "/orders?drawer=details", "/checkout-ghost", "/docs/[...parts]"],
+  { id: "buy", title: "Buy a plan <img src=x onerror=\"window.__xss=2\">", entry: "/", exit: ["/orders?drawer=details"], screens: ["/", "/pricing", "/orders?drawer=details", "/checkout-ghost", "/docs/[...parts]"],
     steps: ["/", { screen: "/pricing", via: "Pricing" }, { screen: "/orders?drawer=details", via: "Checkout" }, "/checkout-ghost"],
     branches: [{ title: "Read the docs first", from: "/pricing", steps: [{ screen: "/docs/[...parts]", via: "Checkout" }, "/orders?drawer=details"] }] },
 ] };
@@ -22,6 +22,8 @@ let html: string; let viewerDir: string; let browser: Awaited<ReturnType<typeof 
 beforeAll(async () => {
   viewerDir = await buildViewer();
   await scanCommand(FIXTURE, () => {});
+  // Security: repo source and manifest text reach the viewer as data, never as markup (stored-XSS regression, 2026-09-04 audit C1/H4)
+  { const gp = join(DATA, "graph.json"); const g = JSON.parse(readFileSync(gp, "utf8")); const e = g.edges.find((x: { source: string }) => x.source === "/") ?? g.edges[0]; e.trigger = "<b id=\"xss-trigger\">t</b>"; e.evidence.snippet = "<img src=x onerror=\"window.__xss=1\">"; writeFileSync(gp, JSON.stringify(g)); }
   mkdirSync(join(DATA, "shots"), { recursive: true });
   const captured = ["/", "/orders?drawer=details"];
   for (const id of captured) writeFileSync(shotFiles(join(DATA, "shots"), id).full, JPEG);
@@ -225,6 +227,19 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     expect(viewer.match(/(?:textContent|innerHTML)\s*=\s*["'](?:Kind|File|URL|Out|In|Sidebar|states|stories|flows|missing)["']/gi) ?? []).toEqual([]);
     await open("#f/shop");
     const counts = await page.evaluate<{ icons: number; titles: number }>(`(() => { const icons = [...document.querySelectorAll('svg')].filter((svg) => [...svg.children].some((child) => child.localName === 'title')); return { icons: icons.length, titles: document.querySelectorAll('svg > title').length }; })()`);
-    expect(counts).toEqual({ icons: 45, titles: 45 });
+    expect(counts).toEqual({ icons: 50, titles: 50 }) // +5 file-code icons: Inspector evidence rows render since the 2026-09-04 security fix;
+  });
+
+  it("renders hostile source snippets and manifest titles as text, never as markup", async () => {
+    await open("#f/shop");
+    await (page as unknown as { click(selector: string): Promise<void> }).click(".edge-pill"); await page.waitForTimeout(300);
+    await page.evaluate<void>("document.querySelector('#drawer .inspector-row')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))");
+    expect(await count("#xss-trigger")).toBe(0);
+    expect(await count('img[src="x"]')).toBe(0);
+    expect(await page.evaluate<string>("String(window.__xss)")).toBe("undefined");
+    expect(await text("#drawer")).toContain("<img src=x"); // shown literally
+    await open("#f/shop/s/buy");
+    expect(await count('img[src="x"]')).toBe(0);
+    expect(await page.evaluate<string>("String(window.__xss)")).toBe("undefined");
   });
 });
