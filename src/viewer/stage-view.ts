@@ -65,6 +65,7 @@ function update(): void {
   const source = live?.available ? live.status : t("captured");
   q<HTMLElement>(".stage-meta").textContent = `${story.title} · ${index + 1} / ${path.length} · ${source}`;
   frame!.show(v.frame); live?.show(v.frame);
+  frame!.el.dataset.hint = live?.available && v.frame.id.includes("#") ? t("openByHand") : ""; // a local-state overlay: the app shows its parent until the presenter opens it
   root.dataset.source = live?.available ? (live.interactive ? "live" : "view") : "captured";
   const caption = q<HTMLElement>(".stage-caption"); const via = q<HTMLElement>(".stage-via"); const text = q<HTMLElement>(".stage-caption-text");
   via.replaceChildren(); if (v.via) { via.append(`${t("via")} `); const b = document.createElement("b"); b.textContent = v.via; via.append(b); }

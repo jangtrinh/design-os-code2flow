@@ -1977,3 +1977,64 @@ body.staging #phud {
     line-height: 20px;
   }
 }
+/* Live app layer: hidden until it has painted the step, so the capture covers every load. */
+.stage-live {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border: 0;
+  background: var(--surface);
+  transform-origin: 0 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.stage-frame[data-source="live"] .stage-live {
+  opacity: 1;
+  pointer-events: auto;
+}
+.stage-frame[data-source="live"] .stage-capture {
+  visibility: hidden;
+}
+.stage-shield {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  cursor: default;
+}
+.stage-frame[data-source="captured"] .stage-shield {
+  display: none;
+}
+.stage-exit-live {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--surface);
+  font: 600 13px/16px Inter, system-ui, sans-serif;
+  cursor: pointer;
+}
+.stage-frame[data-hint]:not([data-hint=""])::after {
+  content: attr(data-hint);
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 2;
+  max-width: calc(100% - 24px);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(18, 18, 18, 0.82);
+  color: var(--surface);
+  font-size: 12px;
+  line-height: 16px;
+  pointer-events: none;
+}
+@media (max-width: 1024px) {
+  .stage-exit-live {
+    min-height: 44px;
+  }
+}

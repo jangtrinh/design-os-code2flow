@@ -8,7 +8,8 @@ import { renderInspect } from "./views-inspect.js";
 import { renderMap } from "./views-map.js";
 import { presenterHud, renderLanes } from "./views-present.js";
 import { renderStoryPlayer } from "./story-player.js";
-import { stageKey } from "./stage-view.js";
+import { stageKey, useLiveLayer } from "./stage-view.js";
+import { LiveFrame } from "./stage-live-frame.js";
 import { iconHtml } from "./icons.js";
 
 /** Loads `.code2flow/*` from the serving CLI (or an inlined payload in exports) and boots the canvas. */
@@ -19,6 +20,7 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
   try { data = await loadData(); } catch (err) { emptyState(stage, `Could not load the flow data: ${(err as Error).message}`); return; }
   if (!data.features.length) data.features = defaultFeatures(data.graph.screens.filter((s) => s.kind === "route").map((s) => s.id));
   initData(data);
+  if (data.stage?.live) { const info = data.stage; useLiveLayer((frame) => new LiveFrame(frame, info)); } // serve only: exports never frame an app
   document.title = `${data.productName} · Code2Flow`;
   if (!data.features.length) { emptyState(stage, `No features detected: the graph has ${data.graph.screens.length} screens and no route screens. Run \`code2flow scan\` on the app root (the folder that contains app/ or src/app/).`); return; }
   const view = document.getElementById("view") as unknown as SVGGElement; const svg = view.ownerSVGElement!; svg.querySelector(":scope > title")?.remove(); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", "Flow canvas"); /* aria-label names the canvas for assistive tech without a hover tooltip */ const canvas = new Canvas(stage, view);
