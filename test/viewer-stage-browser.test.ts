@@ -63,6 +63,35 @@ describe("Stage, captured (offline export, real pointer and keys)", () => {
     expect(await page.evaluate<number>(`document.querySelectorAll(".stage").length`)).toBe(1); // still on the Stage
     await page.keyboard.press("l"); await page.close();
   });
+  it("⌘K finds a screen by its Vietnamese name without accents and opens it on the Stage", async () => {
+    const page = await open("#f/shop/s/review-orders/play/0/focus");
+    await page.keyboard.press("Meta+k"); await page.waitForTimeout(100);
+    await (page as unknown as { keyboard: { type(t: string): Promise<void> } }).keyboard.type("don hang da luu");
+    expect(await text(page, "#palette-results li:first-child")).toContain("Archived orders");
+    await page.keyboard.press("Enter"); await page.waitForTimeout(200);
+    expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/review-orders/play/2/focus"); // in the current story: its own step
+    expect(await text(page, ".stage-title")).toBe("Archived orders");
+    await page.close();
+  });
+  it("⌘K on a screen outside the story opens the feature walk at that screen", async () => {
+    const page = await open("#f/shop/s/review-orders/play/0/focus");
+    await page.keyboard.press("Meta+k"); await page.waitForTimeout(100);
+    await (page as unknown as { keyboard: { type(t: string): Promise<void> } }).keyboard.type("tab=open");
+    await page.keyboard.press("Enter"); await page.waitForTimeout(200);
+    expect(await page.evaluate<string>("location.hash")).toMatch(/^#f\/shop\/s\/walk:shop\/play\/\d+\/focus$/);
+    expect(await text(page, ".stage-meta")).toMatch(/^Shop · all screens · \d+ \/ 6 · Captured screen$/);
+    const walk = await page.evaluate<string[]>(`[...document.querySelectorAll(".stage-thumb")].map((b) => b.getAttribute("aria-label"))`);
+    // / → /orders and its State Screens → /settings: breadth-first from the story entry. (Step 5's name is the captured dialog text: a capture-title follow-up.)
+    expect(walk.map((x) => x.replace(/^Step \d+: /, "").slice(0, 16))).toEqual(["Home dashboard", "Open orders", "Archived orders", "Open", "New orderPick a c", "Team settings"].map((x) => x.slice(0, 16)));
+    await page.close();
+  });
+  it("resumes a story at the last step the Stage showed", async () => {
+    const page = await open("#f/shop/s/review-orders/play/3/focus");
+    await page.goto(`file://${spa.html}#f/shop/s/review-orders`); await page.waitForTimeout(400);
+    await page.click('#modeSeg button[data-mode="play"]'); await page.waitForTimeout(200);
+    expect(await page.evaluate<string | null>(`document.querySelector(".player-card.on")?.dataset.step ?? null`)).toBe("3");
+    await page.close();
+  });
   it("keeps chrome within 10% of the window at 1280×720, 1440×900 and 1920×1080, with no horizontal scroll down to 375", { timeout: 30000 }, async () => {
     for (const [w, h] of [[1280, 720], [1440, 900], [1920, 1080]]) {
       const page = await open("#f/shop/s/review-orders/play/1/focus", w, h);

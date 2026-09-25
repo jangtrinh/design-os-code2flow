@@ -10,6 +10,7 @@ import { presenterHud, renderLanes } from "./views-present.js";
 import { renderStoryPlayer } from "./story-player.js";
 import { stageKey, useLiveLayer } from "./stage-view.js";
 import { LiveFrame } from "./stage-live-frame.js";
+import { playStory, rememberStep, resumeStep, stageTargetFor } from "./feature-walk.js";
 import { iconHtml } from "./icons.js";
 
 /** Loads `.code2flow/*` from the serving CLI (or an inlined payload in exports) and boots the canvas. */
@@ -39,8 +40,8 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
       return;
     }
     if (state.mode === "play") {
-      const stories = D.stories.filter((s) => storyFeature(s) === state.feature); const story = stories.find((s) => s.id === (state.story ?? stories[0]?.id));
-      if (story) { state.story = story.id; state.step = Math.min(Math.max(0, state.step), Math.max(0, storyPath(story).length - 1)); }
+      const story = playStory(); // an authored story, or the feature walk (ADR-0008 §1)
+      if (story) { state.story = story.id; state.step = Math.min(Math.max(0, state.step), Math.max(0, storyPath(story).length - 1)); rememberStep(story.id, state.step); }
       renderStoryPlayer(player, story, state.step, state.playFocus, { step: (index) => { state.step = index; go(); }, openFocus: (index) => { state.step = index; state.playFocus = true; go(); }, view: (focus) => { state.playFocus = focus; go(); } });
       return;
     }
@@ -67,7 +68,8 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
   const openStoryOf = (s: ScreenNode): void => { const st = D.stories.find((x) => x.screens.some((id) => routeOf(id) === routeOf(s.id))); if (st && state.story !== st.id) { state.story = st.id; state.selected = s; go(); } };
   const nav: NavHandlers = {
     openFeature: (id, story) => { state.level = "feature"; state.feature = id; state.story = story; state.step = 0; state.selected = null; go(); },
-    setStory: (id) => { state.story = id; state.step = 0; state.selected = null; go(); },
+    setStory: (id) => { state.story = id; state.step = id && state.mode === "play" ? resumeStep(id) : 0; state.selected = null; go(); },
+    presentScreen: (s) => { const target = stageTargetFor(s.id); state.level = "feature"; state.feature = target.feature; state.story = target.story; state.mode = "play"; state.playFocus = true; state.step = target.step; state.selected = null; go(); },
     toMap: () => { state.level = "map"; state.selected = null; go(); },
     toggleDismiss: (v) => { state.showDismiss = v; render(); },
     gotoScreen: (s) => { state.level = "feature"; state.feature = featureOf(s.id); state.story = null; state.mode = "inspect"; state.step = 0; state.selected = s; go(); showDrawer(s, select, openLightbox); canvas.focusOn(routeOf(s.id) ?? s.id); },
@@ -76,13 +78,13 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
   const help = document.getElementById("canvas-help")!; const helpPopover = document.getElementById("canvas-help-popover")!;
   help.innerHTML = iconHtml("question", "Legend");
   help.addEventListener("click", () => { const open = helpPopover.hidden; helpPopover.hidden = !open; help.setAttribute("aria-expanded", String(open)); if (open) helpPopover.innerHTML = `<div class="help-row"><span class="help-line high"></span>Solid · high</div><div class="help-row"><span class="help-line medium"></span>Grey · medium</div><div class="help-row"><span class="help-line low"></span>Dashed · review</div><div class="help-row">${iconHtml("link-break", "Broken target")}Broken target</div><div class="help-row">${iconHtml("sidebar-simple", "Shell target")}Shell target</div><div class="help-row">${iconHtml("arrow-u-up-left", "Return action")}Return action</div><div class="help-row">${iconHtml("keyboard", "Keyboard shortcuts")}Arrows · + · − · F</div>`; });
-  document.querySelectorAll<HTMLButtonElement>("#modeSeg button").forEach((b) => b.addEventListener("click", () => { state.mode = b.dataset.mode as "inspect" | "present" | "play"; state.playFocus = false; if (state.level === "map") { state.level = "feature"; state.feature = state.feature ?? [...D.features].sort((a, c) => a.order - c.order)[0]?.id ?? null; } go(); if (state.mode === "inspect" && state.selected) showDrawer(state.selected, select, openLightbox); }));
+  document.querySelectorAll<HTMLButtonElement>("#modeSeg button").forEach((b) => b.addEventListener("click", () => { state.mode = b.dataset.mode as "inspect" | "present" | "play"; state.playFocus = false; if (state.mode === "play" && state.story) state.step = resumeStep(state.story); if (state.level === "map") { state.level = "feature"; state.feature = state.feature ?? [...D.features].sort((a, c) => a.order - c.order)[0]?.id ?? null; } go(); if (state.mode === "inspect" && state.selected) showDrawer(state.selected, select, openLightbox); }));
   document.getElementById("lightbox")!.addEventListener("click", (ev) => { if (!(ev.target as Element).closest(".scroller")) document.getElementById("lightbox")!.hidden = true; });
   stage.addEventListener("click", () => { if (state.mode !== "present" && state.selected) { state.selected = null; closeDrawer(); render(); } });
   window.addEventListener("popstate", () => { if (!applyingHash && applyHash()) { render(); if (state.selected) showDrawer(state.selected, select, openLightbox); } });
   window.addEventListener("keydown", (ev) => {
     const tag = (ev.target as HTMLElement).tagName; if (tag === "INPUT" || tag === "SELECT") return;
-    const fs = D.stories.filter((s) => storyFeature(s) === state.feature); const st = fs.find((s) => s.id === (state.story ?? fs[0]?.id));
+    const fs = D.stories.filter((s) => storyFeature(s) === state.feature); const st = state.mode === "play" ? playStory() : fs.find((s) => s.id === (state.story ?? fs[0]?.id));
     if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "k") { palette.open(); ev.preventDefault(); return; } if (ev.key === "/") { palette.open(); ev.preventDefault(); return; }
     if (document.body.classList.contains("staging") && !palette.isOpen() && stageKey(ev)) return; // Stage keys: E C N I L F ? Home End, Esc chain
     if (ev.key === "+" || ev.key === "=") { canvas.zoomCenter(1.2); return; }

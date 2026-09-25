@@ -9,7 +9,7 @@ const EN = {
   evidenceTitle: "Evidence", via: "via", notInCode: "not found in code", route: "Screen id", openByHand: "Opens by hand: no URL reaches this screen",
   missing: "Missing screen: in the story, not in the code", loading: "Loading the live app…", frameError: "The live app did not load", retry: "Retry", openPage: "Open page",
   keysTitle: "Shortcuts", kArrows: "Previous / next step", kHomeEnd: "First / last step", kEsc: "Leave Live, close panel, back to all steps",
-  nowLive: "Live. The app takes your clicks and keys.", nowView: "View only.", localeNow: "Language: ",
+  nowLive: "Live. The app takes your clicks and keys.", nowView: "View only.", localeNow: "Language: ", allScreens: "all screens",
 } as const;
 type Key = keyof typeof EN;
 const VI: Record<Key, string> = {
@@ -20,7 +20,7 @@ const VI: Record<Key, string> = {
   evidenceTitle: "Bằng chứng", via: "qua", notInCode: "không tìm thấy trong code", route: "Mã màn hình", openByHand: "Mở bằng tay: không có URL tới màn hình này",
   missing: "Thiếu màn hình: có trong câu chuyện, không có trong code", loading: "Đang tải ứng dụng…", frameError: "Ứng dụng không tải được", retry: "Thử lại", openPage: "Mở trang",
   keysTitle: "Phím tắt", kArrows: "Bước trước / sau", kHomeEnd: "Bước đầu / cuối", kEsc: "Thoát trực tiếp, đóng bảng, về tất cả các bước",
-  nowLive: "Trực tiếp. Ứng dụng nhận cú bấm và phím của bạn.", nowView: "Chỉ xem.", localeNow: "Ngôn ngữ: ",
+  nowLive: "Trực tiếp. Ứng dụng nhận cú bấm và phím của bạn.", nowView: "Chỉ xem.", localeNow: "Ngôn ngữ: ", allScreens: "mọi màn hình",
 };
 
 /** Stage chrome string in the current locale. */

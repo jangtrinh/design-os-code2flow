@@ -18,6 +18,11 @@ export const tx = (t: Text | undefined): string => textOf(t, lang.locale, lang.l
 /** The authored name of a feature id or screen id in the current locale, or null. */
 export const audienceName = (id: string): string | null => { const v = names[id]; return v === undefined ? null : tx(nameText(v)) || null; };
 
+/** Every locale's text of a manifest Text (search looks in all of them). */
+export const allTexts = (t: Text | undefined): string[] => (t == null ? [] : typeof t === "string" ? [t] : Object.values(t).filter((v): v is string => typeof v === "string"));
+/** Every locale's Audience Name of an id. */
+export const allNames = (id: string): string[] => allTexts(nameText(names[id]));
+
 /** Once per load: remembers the manifest's raw texts so every locale switch starts from them. */
 export function initAudience(data: ViewerData): void {
   names = data.names ?? {}; stories = data.stories; features = data.features;
