@@ -71,7 +71,8 @@ export function installStageBridge(options: StageBridgeOptions = {}): () => void
   window.addEventListener("message", onMessage);
   window.addEventListener("keydown", onKey, true);
   window.addEventListener("pointerdown", onPointer, true);
-  // Announce this document to every allowed viewer origin: postMessage drops the ones that are not the parent.
-  for (const origin of allowed) post({ c2f: 1, type: "ready", version: STAGE_PROTOCOL_VERSION, path: here() }, origin);
+  // Announce this document to the parent: its exact origin when the browser tells us (ancestorOrigins, referrer), else every allowed origin.
+  const parentGuess = [(location as Location & { ancestorOrigins?: DOMStringList }).ancestorOrigins?.[0], document.referrer && new URL(document.referrer).origin].find((o) => o && allowed.has(o));
+  for (const origin of parentGuess ? [parentGuess] : allowed) post({ c2f: 1, type: "ready", version: STAGE_PROTOCOL_VERSION, path: here() }, origin);
   return () => { window.removeEventListener("message", onMessage); window.removeEventListener("keydown", onKey, true); window.removeEventListener("pointerdown", onPointer, true); };
 }

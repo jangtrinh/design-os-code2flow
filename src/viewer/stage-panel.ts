@@ -21,7 +21,7 @@ export function renderStagePanel(panel: HTMLElement, kind: PanelKind, story: Sto
     return;
   }
   if (kind === "evidence") {
-    const trig = el("p", "stage-evidence-trigger"); trig.innerHTML = iconHtml("cursor-click", "Action trigger", 16); trig.append(el("span", "", step.via ?? edge?.trigger ?? t("notInCode"))); panel.append(trig);
+    const trig = el("p", "stage-evidence-trigger-label"); trig.innerHTML = iconHtml("cursor-click", "Action trigger", 16); trig.append(el("span", "", step.via ?? edge?.trigger ?? t("notInCode"))); panel.append(trig);
     if (edge) {
       const meta = el("p", "stage-evidence-meta mono"); meta.append(el("span", `confidence-chip ${edge.confidence}`, edge.confidence), el("span", "", ` ${edge.evidence.file}:${edge.evidence.line}`)); panel.append(meta);
       if (edge.evidence.snippet) panel.append(el("pre", "stage-evidence-snippet", edge.evidence.snippet));

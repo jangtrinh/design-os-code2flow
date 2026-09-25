@@ -98,7 +98,12 @@ describe("Stage, captured (offline export, real pointer and keys)", () => {
       const pct = await page.evaluate<number>(`(() => { const s = document.querySelector(".stage").getBoundingClientRect(), f = document.querySelector(".stage-frame").getBoundingClientRect(), c = document.querySelector(".stage-caption").getBoundingClientRect(); return 100 * (s.bottom - f.bottom - c.height) / innerHeight; })()`);
       expect(pct, `${w}x${h}`).toBeLessThanOrEqual(10); await page.close();
     }
-    for (const w of [375, 768]) { const page = await open("#f/shop/s/review-orders/play/1/focus", w, 812); expect(await page.evaluate<boolean>("document.documentElement.scrollWidth <= innerWidth"), String(w)).toBe(true); await page.close(); }
+    for (const w of [375, 768]) {
+      const page = await open("#f/shop/s/review-orders/play/1/focus", w, 812); expect(await page.evaluate<boolean>("document.documentElement.scrollWidth <= innerWidth"), String(w)).toBe(true);
+      // every visible dock control sits inside the dock, fully opaque, at least 44×44 (touch floor)
+      expect(await page.evaluate<string[]>(`(() => { const d = document.querySelector(".stage-dock").getBoundingClientRect(); return [...document.querySelectorAll(".stage-dock button")].filter((b) => getComputedStyle(b).display !== "none" && b.getBoundingClientRect().width > 0).filter((b) => { const r = b.getBoundingClientRect(); return r.left < d.left || r.right > d.right || r.width < 44 || r.height < 44 || getComputedStyle(b).opacity !== "1" && !b.disabled; }).map((b) => b.className); })()`), String(w)).toEqual([]);
+      await page.close();
+    }
     expect(errors).toEqual([]);
   });
 });

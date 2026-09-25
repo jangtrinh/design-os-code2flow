@@ -23,6 +23,7 @@ export async function probeStage(config: Code2FlowConfig, opts: { live?: boolean
   if (stage.live === false) return off("live view off (stage.live is false)");
   if (!url) return off("no live app configured (set stage.url or serverUrl)");
   if (!isLoopbackUrl(url)) return off(`${url} is not on this machine`);
+  if (LOOPBACK_VIEWER_ORIGINS.includes(new URL(url).origin)) return off(`${url} is the viewer itself (port 4317); point stage.url at the app`);
   let res: Response;
   try { res = await fetchImpl(url, { signal: AbortSignal.timeout(2000) }); } catch { return off(`nothing answers at ${url}`); }
   const xfo = res.headers.get("x-frame-options");

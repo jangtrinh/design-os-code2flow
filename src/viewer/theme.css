@@ -1653,6 +1653,8 @@ body.staging #phud {
   white-space: nowrap;
 }
 .stage {
+  /* --text2 (#767676) is 4.4:1 on --surface: below the 4.5:1 floor for the Stage's small text, so the Stage darkens it (5.0–5.2:1 on canvas/surface) */
+  --stage-text2: #6b6b6b;
   position: absolute;
   inset: 0;
   display: grid;
@@ -1708,7 +1710,7 @@ body.staging #phud {
   height: 100%;
   margin: 0;
   padding: 24px;
-  color: var(--text2);
+  color: var(--stage-text2);
   font-size: 15px;
   line-height: 24px;
   text-align: center;
@@ -1734,7 +1736,7 @@ body.staging #phud {
 }
 .stage-note-label {
   margin: 0 0 4px;
-  color: var(--text2);
+  color: var(--stage-text2);
   font-size: 12px;
   line-height: 16px;
   font-weight: 500;
@@ -1746,9 +1748,9 @@ body.staging #phud {
   line-height: 20px;
 }
 .stage-note-empty {
-  color: var(--text2);
+  color: var(--stage-text2);
 }
-.stage-evidence-trigger {
+.stage-evidence-trigger-label {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -1809,7 +1811,7 @@ body.staging #phud {
   display: none;
 }
 .stage-via {
-  color: var(--text2);
+  color: var(--stage-text2);
   white-space: nowrap;
 }
 .stage-via b {
@@ -1844,7 +1846,7 @@ body.staging #phud {
   font-weight: 600;
 }
 .stage-meta {
-  color: var(--text2);
+  color: var(--stage-text2);
   font-size: 12px;
   line-height: 16px;
   font-variant-numeric: tabular-nums;
@@ -1889,7 +1891,7 @@ body.staging #phud {
   left: 3px;
   bottom: 3px;
   padding: 0 4px;
-  border-radius: 4px;
+  border-radius: 6px;
   background: rgba(18, 18, 18, 0.72);
   color: var(--surface);
   font: 500 10px/14px "JetBrains Mono", Menlo, monospace;
@@ -1900,6 +1902,7 @@ body.staging #phud {
   gap: 2px;
 }
 .stage-btn {
+  flex: 0 0 auto;
   color: var(--text);
 }
 .stage-btn svg {
@@ -1910,18 +1913,17 @@ body.staging #phud {
   background: var(--well);
 }
 .stage-btn:disabled {
-  color: var(--text2);
+  color: var(--stage-text2);
   opacity: 0.5;
   cursor: default;
 }
-.stage-lang {
+.stage-btn.stage-lang {
   width: auto;
   grid-auto-flow: column;
   gap: 4px;
   padding: 0 8px;
 }
-.stage-lang::after {
-  content: attr(data-locale);
+.stage-lang-label {
   font-size: 12px;
   line-height: 16px;
   font-weight: 600;
@@ -1945,9 +1947,13 @@ body.staging #phud {
     width: 44px;
     height: 44px;
   }
-  .stage-thumb {
-    width: 64px;
-    height: 44px;
+  /* the filmstrip and the source label give way to the controls on tablets; arrows and the counter remain */
+  .stage-strip,
+  .stage-source {
+    display: none;
+  }
+  .stage-heading {
+    flex: 1 1 auto;
   }
 }
 @media (max-width: 640px) {
@@ -1978,7 +1984,7 @@ body.staging #phud {
   }
 }
 /* Live app layer: hidden until it has painted the step, so the capture covers every load. */
-.stage-live {
+.stage-live-frame {
   position: absolute;
   left: 0;
   top: 0;
@@ -1988,7 +1994,7 @@ body.staging #phud {
   opacity: 0;
   pointer-events: none;
 }
-.stage-frame[data-source="live"] .stage-live {
+.stage-frame[data-source="live"] .stage-live-frame {
   opacity: 1;
   pointer-events: auto;
 }

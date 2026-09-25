@@ -18,6 +18,7 @@ describe("stage probe: live only when configured, loopback, answering, and frame
     expect((await probeStage({ capture: {} as never, serverUrl: "http://127.0.0.1:3000" }, { live: false }, fake())).reason).toBe("live view off (--no-live)");
     expect((await probeStage({ capture: {} as never, serverUrl: "http://127.0.0.1:3000", stage: { live: false } }, {}, fake())).reason).toBe("live view off (stage.live is false)");
     expect((await probeStage({ capture: {} as never, serverUrl: "http://192.168.1.5:3000" }, {}, fake())).reason).toBe("http://192.168.1.5:3000 is not on this machine");
+    expect((await probeStage({ capture: {} as never, stage: { url: "http://localhost:4317/" } }, {}, fake())).reason).toBe("http://localhost:4317/ is the viewer itself (port 4317); point stage.url at the app");
     expect((await probeStage({ capture: {} as never, serverUrl: "http://127.0.0.1:3000" }, {}, down)).reason).toBe("nothing answers at http://127.0.0.1:3000");
     expect((await probeStage({ capture: {} as never, serverUrl: "http://127.0.0.1:3000" }, {}, fake({ "x-frame-options": "DENY" }))).reason).toBe("the app refuses framing (X-Frame-Options: DENY)");
     expect((await probeStage({ capture: {} as never, serverUrl: "http://127.0.0.1:3000" }, {}, fake({ "content-security-policy": "default-src 'self'; frame-ancestors 'self'" }))).live).toBe(false);

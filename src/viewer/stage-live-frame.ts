@@ -63,7 +63,7 @@ export class LiveFrame implements LiveLayer {
 
   private mount(src: string): void {
     const f = document.createElement("iframe"); this.iframe = f;
-    f.className = "stage-live"; f.title = t("liveView"); f.inert = true;
+    f.className = "stage-live-frame"; f.title = t("liveView"); f.inert = true;
     f.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-popups"); // no top navigation: the app cannot navigate the viewer away
     f.addEventListener("load", () => this.onLoad());
     this.client = new BridgeClient(f, this.info.origin!, {

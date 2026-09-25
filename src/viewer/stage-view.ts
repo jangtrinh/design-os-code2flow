@@ -63,7 +63,8 @@ function update(): void {
   const v = stepView(story, step, index);
   q<HTMLElement>(".stage-title").textContent = v.title; q<HTMLElement>(".stage-title").title = v.title;
   const source = live?.available ? live.status : t("captured");
-  q<HTMLElement>(".stage-meta").textContent = `${story.title} · ${index + 1} / ${path.length} · ${source}`;
+  const metaLine = q<HTMLElement>(".stage-meta"); const src = document.createElement("span"); src.className = "stage-source"; src.textContent = ` · ${source}`;
+  metaLine.replaceChildren(`${story.title} · ${index + 1} / ${path.length}`, src); metaLine.title = metaLine.textContent ?? "";
   frame!.show(v.frame); live?.show(v.frame);
   frame!.el.dataset.hint = live?.available && v.frame.id.includes("#") ? t("openByHand") : ""; // a local-state overlay: the app shows its parent until the presenter opens it
   root.dataset.source = live?.available ? (live.interactive ? "live" : "view") : "captured";
@@ -77,7 +78,7 @@ function update(): void {
   const pressed = (sel: string, on: boolean): void => q<HTMLElement>(sel).setAttribute("aria-pressed", String(on));
   pressed(".stage-captions", stageUi.captions); pressed(".stage-notes", stageUi.panel === "notes"); pressed(".stage-evidence", stageUi.panel === "evidence"); pressed(".stage-help", stageUi.panel === "keys"); pressed(".stage-live", !!live?.interactive);
   q<HTMLButtonElement>(".stage-live").disabled = !live?.available; q<HTMLButtonElement>(".stage-live").title = live?.available ? t("live") : `${t("liveUnavailable")}: ${D.stage?.reason ?? ""}`;
-  q<HTMLButtonElement>(".stage-lang").hidden = lang.locales.length < 2; q<HTMLButtonElement>(".stage-lang").dataset.locale = lang.locale.toUpperCase();
+  q<HTMLButtonElement>(".stage-lang").hidden = lang.locales.length < 2; const langBtn = q<HTMLButtonElement>(".stage-lang"); (langBtn.querySelector(".stage-lang-label") ?? langBtn.appendChild(Object.assign(document.createElement("span"), { className: "stage-lang-label" }))).textContent = lang.locale.toUpperCase();
   q<HTMLButtonElement>(".stage-prev").disabled = index === 0; q<HTMLButtonElement>(".stage-next").disabled = index >= path.length - 1;
 }
 
