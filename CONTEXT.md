@@ -53,7 +53,15 @@ _Avoid_: sub-flow, slice, group view
 
 **Story Manifest**:
 The Code2Flow-format file (`code2flow.stories.json`) that lists each PRD user story with its entry screen and member screens, produced from the PO's PRD markdown.
-_Avoid_: story config, PRD file, tags file
+_Avoid_: story config, PRD file, tags file, playlist
+
+**Stage**:
+The presenter surface that shows one story step at audience scale, from the running app or from its Screen Preview.
+_Avoid_: lightbox, player, focus view
+
+**Audience Name**:
+The authored, localized name of a feature or Screen Node shown to an audience instead of its route or captured title.
+_Avoid_: display name, label override
 
 **Screen Preview**:
 The visual representation inside a Screen Node, rendered either as an automated screen snapshot or a structured list of detected UI elements.
