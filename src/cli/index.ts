@@ -25,7 +25,7 @@ const USAGE = `code2flow — living user-flow canvas from a web codebase (100% l
   code2flow paths <repo> --orphans|--dead-ends                             topology findings
   code2flow snapshot <repo> --url <devServer>    capture every screen (content-fit, real titles)
   code2flow login <repo> --url <devServer>       sign in once (scripted via the config login block or --email-env/--password-env; --manual for a window); reused by snapshot and run
-  code2flow serve <repo>                         open the canvas on http://127.0.0.1:4317
+  code2flow serve <repo> [--no-live]             open the canvas on http://127.0.0.1:4317 (Stage frames the live app when it runs on loopback)
   code2flow export <repo> [--feature id]         self-contained HTML (whole app, or one per feature)
   code2flow render <repo> [--png] [--pdf] [--feature id] [--story id] [--out dir] [--scale 2]  PNG/PDF hand-outs
   code2flow stories scaffold <repo> <prd.md>     prompt pack for writing code2flow.stories.json from a PRD
@@ -36,7 +36,7 @@ const USAGE = `code2flow — living user-flow canvas from a web codebase (100% l
 
 /** Flags that take a value: `--flag --other` or a trailing `--flag` is a usage error, not silently `true`. */
 const VALUE_FLAGS = new Set(["url", "storage-state", "concurrency", "feature", "story", "out", "scale", "from", "to", "max", "dev", "fail-on", "email-env", "password-env", "path", "success-url"]);
-const BOOLEAN_FLAGS = new Set(["orphans", "dead-ends", "shell", "json", "headed", "exit-code", "no-skills", "png", "pdf", "manual", "relogin"]);
+const BOOLEAN_FLAGS = new Set(["orphans", "dead-ends", "shell", "json", "headed", "exit-code", "no-skills", "png", "pdf", "manual", "relogin", "no-live"]);
 
 /** Tiny argv parser: positionals + --flag value / --flag. No dependency needed for nine commands. */
 export function parseArgs(argv: string[]): { command: string; positionals: string[]; flags: Record<string, string | true>; errors: string[] } {
@@ -69,7 +69,7 @@ export async function main(argv: string[]): Promise<number> {
       case "paths": if (!repo) return usage("paths: missing <repo>"); return await pathsCommand(repo, flags);
       case "snapshot": if (!repo) return usage("snapshot: missing <repo>"); await snapshotCommand(repo, flags); return 0;
       case "login": if (!repo) return usage("login: missing <repo>"); await loginCommand(repo, flags); return 0;
-      case "serve": if (!repo) return usage("serve: missing <repo>"); await serveCommand(repo, VIEWER_DIR); await new Promise(() => {}); return 0; // serves until Ctrl+C
+      case "serve": if (!repo) return usage("serve: missing <repo>"); await serveCommand(repo, VIEWER_DIR, console.log, { live: flags["no-live"] !== true }); await new Promise(() => {}); return 0; // serves until Ctrl+C
       case "export": if (!repo) return usage("export: missing <repo>"); await exportCommand(repo, VIEWER_DIR, flags); return 0;
       case "render": if (!repo) return usage("render: missing <repo>"); return await renderCommand(repo, VIEWER_DIR, flags);
       case "stories": if (!positionals[0] || !positionals[1]) return usage("stories: usage  code2flow stories scaffold <repo> <prd.md> | validate <repo>"); return await storiesCommand(positionals[0], positionals[1], positionals[2]); // sub-command first, then <repo>
