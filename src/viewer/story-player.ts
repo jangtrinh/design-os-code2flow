@@ -1,6 +1,6 @@
 import { byId, D, realTitle, routeTitle, storyPath } from "./data-model.js";
 import { renderPlayerPanel } from "./story-player-panel.js";
-import { iconHtml } from "./icons.js";
+import { renderStage } from "./stage-view.js";
 import type { Story } from "./types.js";
 
 export interface PlayerHandlers { step: (index: number) => void; openFocus: (index: number) => void; view: (focus: boolean) => void }
@@ -13,22 +13,15 @@ function screenshotImage(src: string, alt: string): HTMLImageElement {
 
 const titleFor = (id: string): string => { const screen = byId.get(id); return !screen ? "Missing screen" : screen.kind === "route" ? routeTitle(screen.id) : realTitle(screen.id); };
 
-/** Play mode: grid shows every step; Focus displays the current screenshot with the existing step seam. */
+/** Play mode: grid shows every step; Focus is the Stage (ADR-0008), which keeps its own DOM across steps. */
 export function renderStoryPlayer(host: HTMLElement, story: Story | undefined, index: number, focus: boolean, h: PlayerHandlers): void {
-  host.replaceChildren(); host.hidden = !story; if (!story) return;
+  host.hidden = !story; if (!story) { host.replaceChildren(); return; }
   const path = storyPath(story); const current = Math.min(Math.max(0, index), Math.max(0, path.length - 1));
-  const stage = document.createElement("section"); stage.className = focus ? "player-stage player-focus" : "player-stage player-gallery"; stage.setAttribute("aria-label", focus ? "Focused story step" : "Story steps");
+  if (focus) { renderStage(host, story, current, { step: h.step, grid: () => h.view(false) }); return; }
+  host.replaceChildren();
+  const stage = document.createElement("section"); stage.className = "player-stage player-gallery"; stage.setAttribute("aria-label", "Story steps");
   const srcFor = (id: string): string | null => { const screen = byId.get(id); return screen ? (screen.kind === "route" ? D.shotUrl(screen.id) : D.dialogUrl(screen.id) ?? D.shotUrl(screen.id)) : null; };
-  if (focus) {
-    const step = path[current]; const src = srcFor(step.screen); const shot = document.createElement("div"); shot.className = "player-focus-shot";
-    if (src) shot.append(screenshotImage(src, `Screenshot ${step.screen}`)); else { const missing = document.createElement("span"); missing.className = "player-missing"; missing.textContent = `MISSING SCREEN · ${step.screen}`; shot.append(missing); }
-    const chip = document.createElement("span"); chip.className = "player-focus-chip"; chip.textContent = `${current + 1} / ${path.length}`;
-    const title = document.createElement("h2"); title.className = "player-focus-title"; title.textContent = titleFor(step.screen);
-    const arrow = (direction: "prev" | "next"): HTMLButtonElement => { const next = direction === "prev" ? current - 1 : current + 1; const label = direction === "prev" ? "Previous step" : "Next step"; const button = document.createElement("button"); button.type = "button"; button.className = `player-focus-arrow ${direction}`; button.title = label; button.setAttribute("aria-label", label); button.innerHTML = iconHtml(direction === "prev" ? "caret-left" : "caret-right", label, 24); button.hidden = next < 0 || next >= path.length; button.addEventListener("click", () => h.step(next)); return button; };
-    stage.append(arrow("prev"), shot, arrow("next"), chip, title);
-  }
   path.forEach((step, stepIndex) => {
-    if (focus) return;
     const card = document.createElement("button"); card.type = "button"; card.className = "player-card" + (stepIndex === current ? " on" : ""); card.dataset.step = String(stepIndex); card.setAttribute("aria-label", `Step ${stepIndex + 1}: ${titleFor(step.screen)}`);
     const shot = document.createElement("span"); shot.className = "player-card-shot";
     const src = srcFor(step.screen);
@@ -38,5 +31,5 @@ export function renderStoryPlayer(host: HTMLElement, story: Story | undefined, i
     card.append(chip, shot, title); card.addEventListener("click", (event) => { event.stopPropagation(); h.openFocus(stepIndex); }); stage.append(card);
   });
   host.append(stage);
-  const panel = document.createElement("aside"); panel.className = "player-panel"; renderPlayerPanel(panel, story, current, focus, h); host.append(panel);
+  const panel = document.createElement("aside"); panel.className = "player-panel"; renderPlayerPanel(panel, story, current, false, h); host.append(panel);
 }

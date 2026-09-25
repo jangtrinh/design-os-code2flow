@@ -49,5 +49,8 @@ export function isSameOriginPath(path: string): boolean {
   return typeof path === "string" && path.startsWith("/") && !path.startsWith("//") && !path.includes("\\") && !/[\u0000-\u001f]/.test(path);
 }
 
+/** What the viewer's Stage knows about the live app (`/data/stage.json`; exports carry `live: false`). */
+export interface StageInfo { live: boolean; url: string | null; origin: string | null; reason: string; frameQuery: Record<string, string>; localeParam: string | null }
+
 /** Presenter keys the bridge may forward from a Live frame (ADR-0008 §5). */
 export const PRESENTER_KEYS: readonly string[] = ["ArrowLeft", "ArrowRight", "PageUp", "PageDown", "e", "c", "n", "i", "l", "f", "?", "Escape"];

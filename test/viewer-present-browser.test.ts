@@ -128,8 +128,8 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     await (page as unknown as { click(selector: string): Promise<void> }).click('#player .player-card[data-step="2"]');
     await page.waitForTimeout(200);
     expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/2/focus");
-    expect(await count("#player .player-focus")).toBe(1);
-    expect(await page.evaluate<string>(`document.querySelector('.player-focus img')?.getAttribute('src') ?? ''`)).toBe(stepThreeShot);
+    expect(await count("#player .stage")).toBe(1); // Focus is the Stage (ADR-0008)
+    expect(await page.evaluate<string>(`document.querySelector('.stage-capture img')?.getAttribute('src') ?? ''`)).toBe(stepThreeShot);
     await page.keyboard.press("ArrowRight"); await page.waitForTimeout(200);
     expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/3/focus");
     await page.keyboard.press("Escape"); await page.waitForTimeout(200);
@@ -137,12 +137,11 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     expect(await count("#player .player-gallery")).toBe(1);
     expect(await page.evaluate<number>(`[...document.querySelectorAll('#player .player-card')].findIndex((card) => card.classList.contains('on'))`)).toBe(3);
   });
-  it("loads a Focus hash directly and exposes its view control", async () => {
+  it("loads a Focus hash directly as the Stage and returns to the grid with its back control", async () => {
     await open("#f/shop/s/buy/play/1/focus");
-    expect(await count("#player .player-focus")).toBe(1);
-    expect(await count('.player-view-seg [title="Grid view"]')).toBe(1);
-    expect(await count('.player-view-seg [title="Focus view"]')).toBe(1);
-    await (page as unknown as { click(selector: string): Promise<void> }).click('.player-view-seg [title="Grid view"]');
+    expect(await count("#player .stage")).toBe(1);
+    expect(await count('.stage-back[aria-label="Back to all steps"]')).toBe(1);
+    await (page as unknown as { click(selector: string): Promise<void> }).click(".stage-back");
     expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/1");
     expect(await count("#player .player-gallery")).toBe(1);
   });

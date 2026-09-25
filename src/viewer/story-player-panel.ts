@@ -5,7 +5,8 @@ import { iconHtml } from "./icons.js";
 
 export interface PlayerPanelHandlers { step: (index: number) => void; view: (focus: boolean) => void }
 
-const evidenceFor = (story: Story, id: string): ActionEdge | undefined => D.graph.edges.filter((edge) => edge.scope === "screen" && edge.target === id && story.screens.includes(edge.source)).sort((a, b) => ({ high: 3, medium: 2, low: 1 }[b.confidence] - { high: 3, medium: 2, low: 1 }[a.confidence]))[0];
+/** Best detected edge into a step from another screen of the story (highest confidence first). */
+export const evidenceFor = (story: Story, id: string): ActionEdge | undefined => D.graph.edges.filter((edge) => edge.scope === "screen" && edge.target === id && story.screens.includes(edge.source)).sort((a, b) => ({ high: 3, medium: 2, low: 1 }[b.confidence] - { high: 3, medium: 2, low: 1 }[a.confidence]))[0];
 
 /** Right-side evidence panel for a walkthrough step. */
 export function renderPlayerPanel(panel: HTMLElement, story: Story, index: number, focus: boolean, h: PlayerPanelHandlers): void {

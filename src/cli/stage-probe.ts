@@ -1,8 +1,7 @@
 import type { Code2FlowConfig } from "../schema/code2flow-config.js";
-import { isLoopbackUrl, LOOPBACK_VIEWER_ORIGINS } from "../schema/stage-bridge-protocol.js";
+import { isLoopbackUrl, LOOPBACK_VIEWER_ORIGINS, type StageInfo } from "../schema/stage-bridge-protocol.js";
 
-/** What the viewer's Stage needs to know about the live app (served as /data/stage.json). */
-export interface StageInfo { live: boolean; url: string | null; origin: string | null; reason: string; frameQuery: Record<string, string>; localeParam: string | null }
+export type { StageInfo };
 
 /** `frame-ancestors` lets the viewer frame the app only when it names `*`, a scheme, or the viewer's own origin. */
 function frameAncestorsAllow(csp: string | null): boolean {

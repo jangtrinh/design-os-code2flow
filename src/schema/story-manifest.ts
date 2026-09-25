@@ -2,15 +2,14 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { CanonicalFlowGraph } from "./canonical-flow-graph.js";
 import { assertValidFeatureIds, type FeatureConfig } from "./code2flow-config.js";
+import { nameText, textOf, type NameValue, type Text } from "./audience-text.js";
+
+export { nameText, textOf, type NameValue, type Text };
 
 /**
  * Story Manifest (ADR-0006, v2 per ADR-0007, v3 per ADR-0008). v1/v2 files stay valid: every v3 field is optional.
  * v3 adds audience copy for the Stage: `locales`, `names` (Audience Names), and per-step `title`/`caption`/`note`/`cue`.
  */
-/** Audience text: a plain string is the default-locale text; an object holds one string per locale. */
-export type Text = string | Record<string, string>;
-/** An Audience Name, optionally with the evidence it was taken from (for owner review). */
-export type NameValue = Text | { text: Text; source?: string };
 export interface StoryStep {
   screen: string;
   /** Action Trigger label matched against detected edges (ADR-0006) — never free prose. */
@@ -30,16 +29,6 @@ export interface Story {
   feature?: string; order?: number; steps?: (string | StoryStep)[]; branches?: StoryBranch[]; exit?: string[];
 }
 export interface StoryManifest { version: 1 | 2 | 3; note?: string; locales?: string[]; names?: Record<string, NameValue>; features?: FeatureConfig[]; stories: Story[] }
-
-/** The text for `locale`, else the first available one (default locale first), else "". */
-export function textOf(t: Text | undefined, locale?: string, locales: readonly string[] = []): string {
-  if (t == null) return "";
-  if (typeof t === "string") return t;
-  for (const l of [locale, ...locales]) if (l && typeof t[l] === "string") return t[l];
-  return Object.values(t).find((v) => typeof v === "string") ?? "";
-}
-/** Unwraps `{ text, source }` name entries. */
-export const nameText = (v: NameValue | undefined): Text | undefined => (v && typeof v === "object" && "text" in v ? (v as { text: Text }).text : (v as Text | undefined));
 
 export const MANIFEST_FILE = "code2flow.stories.json";
 

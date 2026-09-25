@@ -8,6 +8,7 @@ import { renderInspect } from "./views-inspect.js";
 import { renderMap } from "./views-map.js";
 import { presenterHud, renderLanes } from "./views-present.js";
 import { renderStoryPlayer } from "./story-player.js";
+import { stageKey } from "./stage-view.js";
 import { iconHtml } from "./icons.js";
 
 /** Loads `.code2flow/*` from the serving CLI (or an inlined payload in exports) and boots the canvas. */
@@ -25,7 +26,7 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
   let applyingHash = false;
   const render = (): void => {
     if (printMode && state.mode === "present") state.step = -1; // Hand-outs show the complete lane, never a dimmed focused step.
-    view.replaceChildren(); document.body.classList.toggle("playing", state.mode === "play"); document.body.classList.toggle("presenting", state.mode === "present"); renderRail(nav); renderCrumb(nav);
+    view.replaceChildren(); document.body.classList.toggle("playing", state.mode === "play"); document.body.classList.toggle("presenting", state.mode === "present"); document.body.classList.toggle("staging", state.level === "feature" && state.mode === "play" && state.playFocus); renderRail(nav); renderCrumb(nav);
     const phud = document.getElementById("phud")!;
     phud.hidden = state.mode !== "present";
     if (state.level === "map") { player.hidden = true; renderMap(view, (id) => nav.openFeature(id, null)); canvas.fit(); return; }
@@ -81,6 +82,7 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
     const tag = (ev.target as HTMLElement).tagName; if (tag === "INPUT" || tag === "SELECT") return;
     const fs = D.stories.filter((s) => storyFeature(s) === state.feature); const st = fs.find((s) => s.id === (state.story ?? fs[0]?.id));
     if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "k") { palette.open(); ev.preventDefault(); return; } if (ev.key === "/") { palette.open(); ev.preventDefault(); return; }
+    if (document.body.classList.contains("staging") && !palette.isOpen() && stageKey(ev)) return; // Stage keys: E C N I L F ? Home End, Esc chain
     if (ev.key === "+" || ev.key === "=") { canvas.zoomCenter(1.2); return; }
     if (ev.key === "-" || ev.key === "_") { canvas.zoomCenter(1 / 1.2); return; }
     if (ev.key === "f" || ev.key === "F") { canvas.fit(); return; }
@@ -102,10 +104,12 @@ export async function loadServed(): Promise<ViewerData> {
   const graphRes = await fetch("/data/graph.json"); if (!graphRes.ok) throw new Error(`/data/graph.json → ${graphRes.status}; run \`code2flow scan\` and restart \`serve\``);
   const graph = (await graphRes.json()) as ViewerData["graph"];
   const [meta, titles, urls, storiesFile, config, info] = await Promise.all([ j<Record<string, ShotMeta>>("/data/shots-meta.json", {}), j<Record<string, ScreenTitles>>("/data/titles.json", {}), j<Record<string, string | null>>("/data/url-map.json", {}),
-    j<{ stories?: ViewerData["stories"]; features?: ViewerData["features"] }>("/data/stories.json", {}), j<{ features?: ViewerData["features"] }>("/data/config.json", {}), j<{ product: string; shotIndex: Record<string, string> }>("/data/info.json", { product: "Code2Flow", shotIndex: {} }),
+    j<{ stories?: ViewerData["stories"]; features?: ViewerData["features"]; locales?: string[]; names?: ViewerData["names"] }>("/data/stories.json", {}), j<{ features?: ViewerData["features"] }>("/data/config.json", {}), j<{ product: string; shotIndex: Record<string, string> }>("/data/info.json", { product: "Code2Flow", shotIndex: {} }),
   ]);
   const idx = info.shotIndex;
+  const stage = await j<ViewerData["stage"]>("/data/stage.json", { live: false, url: null, origin: null, reason: "no stage info from serve", frameQuery: {}, localeParam: null });
   return { graph, meta, titles, urls, stories: storiesFile.stories ?? [], features: (storiesFile.features ?? config.features ?? []).map((f, i) => ({ ...f, order: f.order ?? i })), productName: info.product, // manifest wins over config (ADR-0007)
+    locales: storiesFile.locales ?? [], names: storiesFile.names ?? {}, stage,
     shotUrl: (id) => (id in idx && meta[id] ? `/shots/${idx[id]}.jpg` : null), dialogUrl: (id) => (id in idx && meta[id]?.dialog ? `/shots/${idx[id]}-dialog.jpg` : null) };
 }
 
