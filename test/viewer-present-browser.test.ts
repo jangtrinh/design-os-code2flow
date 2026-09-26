@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { exportCommand } from "../src/cli/export-command.js";
 import { scanCommand } from "../src/cli/scan-command.js";
 import { launchBrowser, resolvePlaywright } from "../src/snapshot/playwright-runtime.js";
+import { BROWSER_HOOK_MS, closeBrowser } from "./helpers/close-browser.js";
 import { shotFiles } from "../src/snapshot/shot-file-key.js";
 import { buildViewer } from "../scripts/build-viewer.js";
 import { copyFixture } from "./helpers/fixture-copy.js";
@@ -34,7 +35,7 @@ beforeAll(async () => {
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } }); page = (await ctx.newPage()) as unknown as Page;
   page.on("pageerror", (e) => errors.push("pageerror: " + e.message)); page.on("console", (m) => { if (m.type?.() === "error") errors.push("console: " + m.text?.()); });
 }, 60000);
-afterAll(async () => { await browser?.close(); fx.cleanup(); });
+afterAll(async () => { await closeBrowser(browser); fx.cleanup(); }, BROWSER_HOOK_MS);
 
 const open = async (hash: string): Promise<void> => { await page.goto(`file://${html}${hash}`, { waitUntil: "load" }); await page.waitForTimeout(500); };
 const count = (sel: string): Promise<number> => page.evaluate<number>(`document.querySelectorAll(${JSON.stringify(sel)}).length`);

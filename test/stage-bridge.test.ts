@@ -2,6 +2,7 @@ import { createServer, type Server } from "node:http";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildStageBridge } from "../scripts/build-stage-bridge.js";
 import { launchBrowser, resolvePlaywright } from "../src/snapshot/playwright-runtime.js";
+import { BROWSER_HOOK_MS, closeBrowser } from "./helpers/close-browser.js";
 import { startStageSpa } from "./helpers/stage-spa-server.js";
 
 /** A stand-in viewer: frames the app with the Stage marker and records every message the bridge sends back. */
@@ -20,7 +21,7 @@ beforeAll(async () => {
   app = await startStageSpa({ viewerOrigins: [origin(viewer)] }); appUrl = app.url;
   browser = await launchBrowser(resolvePlaywright(process.cwd()), true);
 }, 60000);
-afterAll(async () => { await browser?.close(); viewer?.close(); stranger?.close(); app?.server.close(); });
+afterAll(async () => { await closeBrowser(browser); viewer?.close(); stranger?.close(); app?.server.close(); }, BROWSER_HOOK_MS);
 
 const openViewer = async (s: Server): Promise<{ page: Page; frame: Frame; log: () => Promise<Array<Record<string, unknown>>> }> => {
   const page = (await (await browser.newContext({ viewport: { width: 1300, height: 800 } })).newPage()) as unknown as Page;

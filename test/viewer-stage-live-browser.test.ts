@@ -5,6 +5,7 @@ import { buildStageBridge } from "../scripts/build-stage-bridge.js";
 import { buildViewer } from "../scripts/build-viewer.js";
 import { serveCommand } from "../src/cli/serve-command.js";
 import { launchBrowser, resolvePlaywright } from "../src/snapshot/playwright-runtime.js";
+import { BROWSER_HOOK_MS, closeBrowser } from "./helpers/close-browser.js";
 import { prepareStageSpa, startStageSpa } from "./helpers/stage-spa-server.js";
 
 type Box = { x: number; y: number; width: number; height: number };
@@ -20,7 +21,7 @@ beforeAll(async () => {
   serve = await serveCommand(spa.dir, viewerDir, () => {}, { port: 0 }); viewerOrigin = serve.url;
   browser = await launchBrowser(resolvePlaywright(process.cwd()), true);
 }, 120000);
-afterAll(async () => { await browser?.close(); serve?.close(); spa?.cleanup(); });
+afterAll(async () => { await closeBrowser(browser); serve?.close(); spa?.cleanup(); }, BROWSER_HOOK_MS);
 
 const appFrame = (page: Page, origin: string): Frame => page.frames().find((f) => f.url().startsWith(origin))!;
 const openStage = async (base: string, step = 0): Promise<Page> => {

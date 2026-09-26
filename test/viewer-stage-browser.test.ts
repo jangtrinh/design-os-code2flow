@@ -3,12 +3,13 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildStageBridge } from "../scripts/build-stage-bridge.js";
 import { buildViewer } from "../scripts/build-viewer.js";
 import { launchBrowser, resolvePlaywright } from "../src/snapshot/playwright-runtime.js";
+import { BROWSER_HOOK_MS, closeBrowser } from "./helpers/close-browser.js";
 import { prepareStageSpa } from "./helpers/stage-spa-server.js";
 
 type Page = { goto(u: string): Promise<unknown>; waitForTimeout(ms: number): Promise<void>; evaluate<T>(src: string): Promise<T>; click(sel: string): Promise<void>; keyboard: { press(k: string): Promise<void> }; mouse: { move(x: number, y: number): Promise<void>; wheel(dx: number, dy: number): Promise<void> }; setViewportSize(v: { width: number; height: number }): Promise<void>; on(ev: string, cb: (e: { message?: string; type?: () => string; text?: () => string }) => void): void; close(): Promise<void> };
 let spa: Awaited<ReturnType<typeof prepareStageSpa>>; let browser: Awaited<ReturnType<typeof launchBrowser>>; const errors: string[] = [];
 beforeAll(async () => { await buildStageBridge(); const viewerDir = await buildViewer(join(process.cwd(), "out", "viewer")); spa = await prepareStageSpa(viewerDir); browser = await launchBrowser(resolvePlaywright(process.cwd()), true); }, 120000);
-afterAll(async () => { await browser?.close(); spa?.cleanup(); });
+afterAll(async () => { await closeBrowser(browser); spa?.cleanup(); }, BROWSER_HOOK_MS);
 
 const open = async (hash: string, width = 1440, height = 900): Promise<Page> => {
   const page = (await (await browser.newContext({ viewport: { width, height } })).newPage()) as unknown as Page;
