@@ -1846,10 +1846,22 @@ body.staging #phud {
   font-weight: 600;
 }
 .stage-meta {
+  display: flex;
   color: var(--stage-text2);
   font-size: 12px;
   line-height: 16px;
   font-variant-numeric: tabular-nums;
+}
+.stage-story {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stage-count,
+.stage-source {
+  flex: none;
+  white-space: pre;
 }
 .stage-strip {
   display: flex;

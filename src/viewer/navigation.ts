@@ -80,7 +80,7 @@ export function setupPalette(h: NavHandlers): { open: () => void; close: () => v
   };
   const render = (q: string): void => { const rows = search(q); results.replaceChildren(); rows.forEach((r, i) => { const b = document.createElement("li"); b.setAttribute("role", "option"); b.setAttribute("aria-selected", String(i === index)); b.className = "result" + (i === index ? " on" : ""); b.innerHTML = `<span class="chip medium">${esc(r.kind)}</span><span>${esc(r.title)}</span><span class="mono meta">${esc(r.sub)}</span>`; b.addEventListener("click", () => { close(); r.go(); }); results.append(b); }); results.dataset.count = String(rows.length); };
   const open = (): void => { palette.hidden = false; input.value = ""; index = 0; render(""); input.focus(); };
-  const close = (): void => { palette.hidden = true; };
+  const close = (): void => { palette.hidden = true; input.blur(); }; // a hidden input that kept focus would swallow every presenter key
   input.addEventListener("input", () => { index = 0; render(input.value); });
   input.addEventListener("keydown", (ev) => { const n = +(results.dataset.count ?? 0); if (ev.key === "ArrowDown") { index = Math.min(n - 1, index + 1); render(input.value); ev.preventDefault(); } if (ev.key === "ArrowUp") { index = Math.max(0, index - 1); render(input.value); ev.preventDefault(); } if (ev.key === "Enter") (results.children[index] as HTMLElement | undefined)?.click(); if (ev.key === "Escape") { close(); ev.stopPropagation(); } });
   palette.addEventListener("click", (ev) => { if (ev.target === palette) close(); });

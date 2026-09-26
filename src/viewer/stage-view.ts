@@ -63,8 +63,9 @@ function update(): void {
   const v = stepView(story, step, index);
   q<HTMLElement>(".stage-title").textContent = v.title; q<HTMLElement>(".stage-title").title = v.title;
   const source = live?.available ? live.status : t("captured");
-  const metaLine = q<HTMLElement>(".stage-meta"); const src = document.createElement("span"); src.className = "stage-source"; src.textContent = ` · ${source}`;
-  metaLine.replaceChildren(`${story.title} · ${index + 1} / ${path.length}`, src); metaLine.title = metaLine.textContent ?? "";
+  // Story title, counter, source: only the title may be shortened (a long authored title must not push the counter or the source chip out of the dock).
+  const metaLine = q<HTMLElement>(".stage-meta"); const parts = [["stage-story", story.title], ["stage-count", ` · ${index + 1} / ${path.length}`], ["stage-source", ` · ${source}`]].map(([cls, text]) => { const el = document.createElement("span"); el.className = cls; el.textContent = text; return el; });
+  metaLine.replaceChildren(...parts); metaLine.title = metaLine.textContent ?? "";
   frame!.show(v.frame); live?.show(v.frame);
   frame!.el.dataset.hint = live?.available && v.frame.id.includes("#") ? t("openByHand") : ""; // a local-state overlay: the app shows its parent until the presenter opens it
   root.dataset.source = live?.available ? (live.interactive ? "live" : "view") : "captured";

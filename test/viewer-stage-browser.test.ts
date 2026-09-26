@@ -72,6 +72,8 @@ describe("Stage, captured (offline export, real pointer and keys)", () => {
     await page.keyboard.press("Enter"); await page.waitForTimeout(200);
     expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/review-orders/play/2/focus"); // in the current story: its own step
     expect(await text(page, ".stage-title")).toBe("Archived orders");
+    await page.keyboard.press("ArrowRight"); await page.waitForTimeout(200); // the closed palette must not keep the keys
+    expect(await text(page, ".stage-title")).toBe("Start a new order");
     await page.close();
   });
   it("⌘K on a screen outside the story opens the feature walk at that screen", async () => {
@@ -97,7 +99,10 @@ describe("Stage, captured (offline export, real pointer and keys)", () => {
     for (const [w, h] of [[1280, 720], [1440, 900], [1920, 1080]]) {
       const page = await open("#f/shop/s/review-orders/play/1/focus", w, h);
       const pct = await page.evaluate<number>(`(() => { const s = document.querySelector(".stage").getBoundingClientRect(), f = document.querySelector(".stage-frame").getBoundingClientRect(), c = document.querySelector(".stage-caption").getBoundingClientRect(); return 100 * (s.bottom - f.bottom - c.height) / innerHeight; })()`);
-      expect(pct, `${w}x${h}`).toBeLessThanOrEqual(10); await page.close();
+      expect(pct, `${w}x${h}`).toBeLessThanOrEqual(10);
+      // a long authored story title shortens itself; the counter and the source chip stay visible (found on a pilot app, 2026-09-26)
+      expect(await page.evaluate<boolean>(`(() => { document.querySelector(".stage-story").textContent = "A story title long enough to fill the whole dock heading and then some more words after that"; const m = document.querySelector(".stage-meta").getBoundingClientRect(), c = document.querySelector(".stage-count").getBoundingClientRect(), s = document.querySelector(".stage-source").getBoundingClientRect(); return c.right <= m.right + 0.5 && s.right <= m.right + 0.5 && c.width > 0 && s.width > 0; })()`), `${w}x${h} counter+source visible`).toBe(true);
+      await page.close();
     }
     for (const w of [375, 768]) {
       const page = await open("#f/shop/s/review-orders/play/1/focus", w, 812); expect(await page.evaluate<boolean>("document.documentElement.scrollWidth <= innerWidth"), String(w)).toBe(true);
