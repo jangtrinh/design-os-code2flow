@@ -59,13 +59,16 @@ export interface ManifestIssue { story: string; level: "error" | "warn"; message
  * Validates a manifest against the graph: unknown screen ids, entries outside their story, and (v2)
  * consecutive steps with no detected transition — the PRD-vs-code drift signal. Nothing is auto-deleted.
  */
-export function validateManifest(m: StoryManifest, graph: CanonicalFlowGraph): ManifestIssue[] {
+export function validateManifest(m: StoryManifest, graph: CanonicalFlowGraph, knownFeatures: readonly string[] = []): ManifestIssue[] {
   const ids = new Set(graph.screens.map((s) => s.id)); const issues: ManifestIssue[] = [];
+  // A story whose `feature` names no feature id is unreachable in the viewer (its hash is ignored); only a caller that knows the features can tell.
+  const featureIds = new Set([...knownFeatures, ...(m.features ?? []).map((f) => f.id)]);
   const hasEdge = (a: string, b: string, via?: string): boolean => graph.edges.some((e) => e.scope === "screen" && e.source === a && e.target === b && (!via || e.trigger.toLowerCase().includes(via.toLowerCase())));
   const seen = new Set<string>();
   for (const st of m.stories) {
     if (!st.id || !st.title) issues.push({ story: st.id ?? "?", level: "error", message: "story needs id and title" });
     if (seen.has(st.id)) issues.push({ story: st.id, level: "error", message: "duplicate story id" }); seen.add(st.id);
+    if (st.feature && featureIds.size && !featureIds.has(st.feature)) issues.push({ story: st.id, level: "warn", message: `feature "${st.feature}" is not a feature id (code2flow.config.json or this manifest): the story is unreachable in the viewer` });
     const screens = storyScreens(st);
     if (!screens.length) issues.push({ story: st.id, level: "error", message: "screens must be a non-empty array (or name them in steps/branches)" });
     for (const [i, s] of (st.steps ?? []).entries()) if (!stepScreen(s)) issues.push({ story: st.id, level: "error", message: `steps[${i}] needs a "screen" id (route path such as /products/[slug]?tab=pricing)` });

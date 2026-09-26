@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { CanonicalFlowGraph } from "../schema/index.js";
+import { loadConfig } from "../schema/code2flow-config.js";
 import { loadManifest, MANIFEST_FILE, validateManifest } from "../schema/story-manifest.js";
 import { realTitleFor } from "./title-helpers.js";
 
@@ -12,7 +13,7 @@ export function validateStoriesFromDisk(repoArg: string, log: (line: string) => 
   const graph = JSON.parse(readFileSync(gp, "utf8")) as CanonicalFlowGraph;
   const m = loadManifest(rootDir);
   if (!m) { log(`stories validate: no ${MANIFEST_FILE} in ${rootDir}`); return { exitCode: 0, totals: { errors: 0, warnings: 0 } }; }
-  const issues = validateManifest(m, graph);
+  const issues = validateManifest(m, graph, (loadConfig(rootDir).features ?? []).map((f) => f.id));
   for (const i of issues) log(`  ${i.level === "error" ? "ERROR" : "warn "}  ${i.story}: ${i.message}`);
   const errors = issues.filter((i) => i.level === "error").length;
   const warnings = issues.length - errors;

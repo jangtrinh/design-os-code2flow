@@ -62,6 +62,12 @@ describe("Story Manifest v3 (additive)", () => {
     expect(msgs.some((x) => x.startsWith('names["/orders"] and names["/"] show the same name'))).toBe(true);
     expect(msgs.some((x) => x.includes("reads like a sentence"))).toBe(true);
   });
+  it("warns on a story whose feature is not a feature id, only when the features are known", () => {
+    const m = { version: 3 as const, stories: [{ id: "s", title: "S", entry: "/", screens: ["/"], feature: "ghost" }] };
+    expect(validateManifest(m, graph).some((i) => /feature "ghost"/.test(i.message))).toBe(false);
+    expect(validateManifest(m, graph, ["shop"]).some((i) => i.level === "warn" && /feature "ghost" is not a feature id/.test(i.message))).toBe(true);
+    expect(validateManifest({ ...m, stories: [{ ...m.stories[0], feature: "shop" }] }, graph, ["shop"]).some((i) => /feature/.test(i.message))).toBe(false);
+  });
   it("adds nothing to a v2 manifest's validate output", () => {
     const m: StoryManifest = { version: 2, stories: [{ id: "s", title: "Buy", entry: "/", screens: ["/", "/orders"], steps: ["/", { screen: "/orders", via: "Orders" }] }] };
     expect(validateManifest(m, graph)).toEqual([]);

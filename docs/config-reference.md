@@ -93,7 +93,7 @@ Produced from a PRD by `code2flow stories scaffold` + the `code2flow-stories-fro
 
 Every text field (`title`, `description`, `caption`, `note`, `cue`, `names` values) is a plain string (the default locale) or one string per locale. `caption` is read by the audience under the screen; `note` and `cue` are presenter-only (`N` on the Stage) but travel with the manifest into exports. `via` keeps its meaning: the Action Trigger label matched against detected edges, never a sentence. Names resolve `names[id]` → captured real title → humanized id; a step `title` overrides the name inside that story only. `L` on the Stage cycles `locales`.
 
-`code2flow stories validate` adds (all warnings): a locale missing from any text, a `names` key that is neither a feature id in this manifest nor a screen id, two names in one manifest showing the same text, v3 fields on a file that still says `"version": 2`, and a `via` longer than 60 characters or containing sentence punctuation (*reads like a sentence: via is the Action Trigger label; put directions in "cue"*).
+`code2flow stories validate` adds (all warnings): a story `feature` that is no feature id in the config or the manifest (the viewer ignores its hash), a locale missing from any text, a `names` key that is neither a feature id in this manifest nor a screen id, two names in one manifest showing the same text, v3 fields on a file that still says `"version": 2`, and a `via` longer than 60 characters or containing sentence punctuation (*reads like a sentence: via is the Action Trigger label; put directions in "cue"*).
 
 Feature ids (in either file) must match `^[a-z0-9][a-z0-9._-]*$` — they end up in export filenames and the viewer's URL hash, so anything else is rejected with a one-line error.
 
