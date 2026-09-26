@@ -14,9 +14,16 @@ Code2Flow maps an App Router codebase into a local user-flow canvas.
 - \`npx code2flow serve .\`
 - \`npx code2flow paths . --from A --to B\`
 - screen ids are App Router route ids
-- \`code2flow.stories.json\` v2 = steps with via
+- \`code2flow.stories.json\` v3 = steps with via, captions, presenter notes; names + locales for the audience
+- Play → Stage presents a story step at audience scale: the live app when \`serve\` runs it on loopback, the capture otherwise
+- live Stage without reloads: \`import { installStageBridge } from "design-os-code2flow/stage-bridge"\` in development only, next to the router
 - \`.code2flow/\` is generated, never edit
 `;
+/** Printed, never written: the one line an app adds next to its router so the Stage can move it without a document reload (ADR-0008 §4). */
+const BRIDGE_SNIPPET = `init  Stage bridge (optional, development only) — add next to your router:
+        import { installStageBridge } from "design-os-code2flow/stage-bridge";
+        if (import.meta.env.DEV) installStageBridge({ navigate: (path) => router.navigate(path) });
+      then \`npm i -D design-os-code2flow\` in the app; without it the Stage reloads the page on every step.`;
 
 function read(rootDir: string, file: string): string | undefined {
   const path = join(rootDir, file); return existsSync(path) ? readFileSync(path, "utf8") : undefined;
@@ -61,4 +68,5 @@ export async function initCommand(repoArg: string, log: (line: string) => void =
     log(`init  added Code2Flow guidance to ${guide}`);
   } else log(`init  ${guide} already initialised`);
   if (opts.skills !== false) copySkills(rootDir, log);
+  if (existsSync(join(rootDir, "package.json"))) log(BRIDGE_SNIPPET);
 }

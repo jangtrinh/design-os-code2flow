@@ -63,5 +63,9 @@ describe("code2flow export + stories (seam: CLI → files)", () => {
     expect(code).toBe(0);
     const pack = readFileSync(join(DATA, "stories-prompt.md"), "utf8");
     expect(pack).toContain("`/pricing`"); expect(pack).toContain("Guest checkout"); expect(existsSync(prd)).toBe(true);
+    // v3 audience copy is documented for the agent: locales, names, per-step caption/note/cue, and via stays a trigger label
+    expect(pack).toContain('"version": 3'); expect(pack).toContain('"locales"'); expect(pack).toContain('"names"');
+    for (const k of ["caption", "note", "cue"]) expect(pack).toContain(`"${k}"`);
+    expect(pack).toMatch(/`via` is the Action Trigger label[^\n]*Never a sentence/);
   });
 });

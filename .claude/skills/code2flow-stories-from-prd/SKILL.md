@@ -1,11 +1,11 @@
 ---
 name: code2flow-stories-from-prd
-description: Turn a PRD markdown into a Code2Flow Story Manifest (code2flow.stories.json v2) using the prompt pack produced by `code2flow stories scaffold`, then validate it against the scanned graph and report PRD-vs-code drift. Use when a PO wants user-story lanes on the Code2Flow canvas, or when a PRD changed.
+description: Turn a PRD markdown into a Code2Flow Story Manifest (code2flow.stories.json v3, v2 structure plus optional audience captions, presenter notes, cues, Audience Names and locales for the Stage) using the prompt pack produced by `code2flow stories scaffold`, then validate it against the scanned graph and report PRD-vs-code drift. Use when a PO wants user-story lanes or a presentable Stage on the Code2Flow canvas, or when a PRD changed.
 ---
 
 # code2flow-stories-from-prd
 
-Turns a PRD into `code2flow.stories.json` (Story Manifest v2, ADR-0006/0007) for a repo that has been scanned with Code2Flow. The LLM step runs here, in the user's agent; the tool itself never calls a model.
+Turns a PRD into `code2flow.stories.json` (Story Manifest v3, ADR-0006/0007/0008; v2 files stay valid) for a repo that has been scanned with Code2Flow. The LLM step runs here, in the user's agent; the tool itself never calls a model.
 
 ## Inputs
 
@@ -21,10 +21,19 @@ Turns a PRD into `code2flow.stories.json` (Story Manifest v2, ADR-0006/0007) for
 - `screens` must include every screen in `steps` and `branches`.
 - Never reorder or rename PRD stories to make validation pass.
 
+## Audience copy (v3, optional — fill it when the stories will be presented on the Stage)
+
+- `via` is the Action Trigger **label** as it appears in the UI ("Approve", "Save changes"), never prose. Directions for the presenter ("Click Approve, then return to the inbox.") go in the step's `cue`.
+- `caption`: one line the audience reads under the screen, in their words — what they see or what just happened. Every step gets a different caption; identical captions across steps are a drift signal for the PRD, not a fill-in.
+- `note`: presenter-only facts and the ruling or PRD line behind them. `cue`: presenter-only, what to do or say to arrive at this step (empty on the first step).
+- `title` on a step: the audience name of that step inside this story. `names`: the Audience Name of a feature id or screen id everywhere in the viewer (`{ "text": …, "source": "docs/…" }` when you can cite the evidence). Do not give two screens in one feature the same name.
+- `locales`: list every language the copy is written in (first = default). Every text field is a plain string (default locale) or `{ "<locale>": "…" }` with one entry per locale. A missing locale is a `validate` warning; leave it missing rather than inventing a translation.
+- Set `"version": 3` when any of these fields is present.
+
 ## Procedure
 
 1. Read the prompt pack fully. List candidate stories (max 12 per run; split larger PRDs by section).
-2. Draft the manifest as JSON. Before writing, walk each `steps` chain against `graph.json`: an edge `source → target` must exist with `scope: "screen"`; if `via` is set it must be contained in the edge `trigger` (case-insensitive). Where none exists, keep the step and add `"note": "asserted by PRD, not detected in code"` on the story.
+2. Draft the manifest as JSON. Before writing, walk each `steps` chain against `graph.json`: an edge `source → target` must exist with `scope: "screen"`; if `via` is set it must be contained in the edge `trigger` (case-insensitive). Where none exists, keep the step and add `"note": "asserted by PRD, not detected in code"` on the story. Take `via` from the edge's `trigger` text, not from the PRD's sentence.
 3. Write `<repo>/code2flow.stories.json`. Keep an existing manifest's stories unless the PRD superseded them; never delete stories silently — move superseded ones to `"archived": true`.
 4. Run `code2flow stories validate <repo>` and paste its output in the report.
 5. Report: stories written, drift findings (unknown screens, missing transitions), and PRD sections you could not map, each with the reason.
@@ -33,7 +42,7 @@ Turns a PRD into `code2flow.stories.json` (Story Manifest v2, ADR-0006/0007) for
 
 ```
 Status: DONE | DONE_WITH_CONCERNS
-Summary: N stories → code2flow.stories.json; validate: E errors, W warnings
+Summary: N stories (S steps, L locales) → code2flow.stories.json; validate: E errors, W warnings
 Drift: <bulleted list of asserted-but-missing transitions and unknown screens, or "none">
 Unmapped PRD sections: <list or "none">
 ```
