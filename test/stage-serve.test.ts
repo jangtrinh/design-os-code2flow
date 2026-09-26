@@ -11,6 +11,8 @@ import { startStageSpa } from "./helpers/stage-spa-server.js";
 
 const fake = (headers: Record<string, string> = {}): typeof fetch => (async () => new Response("ok", { headers })) as unknown as typeof fetch;
 const down: typeof fetch = (async () => { throw new Error("ECONNREFUSED"); }) as unknown as typeof fetch;
+/** A locale middleware bouncing `/` (Next `[locale]` apps do this for a client without Accept-Language, sometimes in a loop). */
+const bouncing: typeof fetch = (async (_u: unknown, init?: RequestInit) => { if (init?.redirect !== "manual") throw new TypeError("fetch failed: redirect count exceeded"); return new Response(null, { status: 307, headers: { location: "/en" } }); }) as unknown as typeof fetch;
 
 describe("stage probe: live only when configured, loopback, answering, and frameable", () => {
   it("names every reason it stays captured", async () => {
@@ -22,6 +24,9 @@ describe("stage probe: live only when configured, loopback, answering, and frame
     expect((await probeStage({ capture: {} as never, serverUrl: "http://127.0.0.1:3000" }, {}, down)).reason).toBe("nothing answers at http://127.0.0.1:3000");
     expect((await probeStage({ capture: {} as never, serverUrl: "http://127.0.0.1:3000" }, {}, fake({ "x-frame-options": "DENY" }))).reason).toBe("the app refuses framing (X-Frame-Options: DENY)");
     expect((await probeStage({ capture: {} as never, serverUrl: "http://127.0.0.1:3000" }, {}, fake({ "content-security-policy": "default-src 'self'; frame-ancestors 'self'" }))).live).toBe(false);
+  });
+  it("counts a redirect as an answer instead of following it", async () => {
+    expect((await probeStage({ capture: {} as never, serverUrl: "http://127.0.0.1:4320" }, {}, bouncing)).live).toBe(true);
   });
   it("goes live with the stage url, frame query and locale parameter", async () => {
     const info = await probeStage({ capture: {} as never, serverUrl: "http://127.0.0.1:3000", stage: { url: "http://localhost:5173/app", frameQuery: { review: "0" }, localeParam: "lang" } }, {}, fake({ "content-security-policy": "frame-ancestors http://127.0.0.1:4317" }));

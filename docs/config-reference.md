@@ -35,7 +35,7 @@ Two optional files in the **target repo** root. Everything has a default; the fi
 
 - `match` accepts an exact path or `/prefix/**`. First match wins. Routes matched by nothing fall back to their top segment; `/`, `/settings…`, `/notifications` go to `account`.
 - Route samples are resolved in order: string-literal hrefs in the code → links discovered on captured pages → `routeExamples` → the `needs-sample` counter (and lint finding).
-- `stage`: `serve` probes `stage.url ?? serverUrl` once at start (2 s timeout, reads `X-Frame-Options` and `frame-ancestors`) and logs `stage  live <url>` or `stage  captured · <reason>`. Only when live does the served viewer's CSP gain `frame-src <origin>`; exports never do. `serve --no-live` forces captures. The frame URL for a step is the screen's captured URL (`url-map.json`) plus `frameQuery`, `c2f-stage=1` and `<localeParam>=<locale>`.
+- `stage`: `serve` probes `stage.url ?? serverUrl` once at start (any HTTP answer counts, redirects are not followed, 10 s budget for a slow dev server; reads `X-Frame-Options` and `frame-ancestors`) and logs `stage  live <url>` or `stage  captured · <reason>`. Only when live does the served viewer's CSP gain `frame-src <origin>`; exports never do. `serve --no-live` forces captures. The frame URL for a step is the screen's captured URL (`url-map.json`) plus `frameQuery`, `c2f-stage=1` and `<localeParam>=<locale>`.
 
 ## `code2flow.stories.json` (Story Manifest)
 
