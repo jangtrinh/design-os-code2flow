@@ -66,6 +66,10 @@ export class LiveFrame implements LiveLayer {
     f.className = "stage-live-frame"; f.title = t("liveView"); f.inert = true;
     f.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-popups"); // no top navigation: the app cannot navigate the viewer away
     f.addEventListener("load", () => this.onLoad());
+    // `inert` stops the presenter from focusing the frame, not the app from focusing itself: a settings form or a dialog's
+    // showModal() pulls the system focus into the frame and every Stage key dies. In view-only, hand it straight back.
+    // (window `blur` fires before the frame is the active element, so the check waits one task.)
+    window.addEventListener("blur", () => setTimeout(() => { if (!this.interactive && document.activeElement === f) f.blur(); }));
     this.client = new BridgeClient(f, this.info.origin!, {
       ready: (path) => { if (this.mode !== "bridge") { this.mode = "bridge"; this.changed(); } if (this.target && this.pathOf(this.target) === path) { this.painted = this.target; this.setVisible(true); } },
       key: (m) => window.dispatchEvent(new KeyboardEvent("keydown", { key: m.key, metaKey: m.meta, ctrlKey: m.ctrl, shiftKey: m.shift, bubbles: true, cancelable: true })),

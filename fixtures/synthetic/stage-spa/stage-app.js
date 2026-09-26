@@ -10,13 +10,15 @@ async function go(path, mode = "push") {
   const html = await (await fetch(path)).text();
   if (mode === "push") history.pushState(null, "", path); else if (mode === "replace") history.replaceState(null, "", path);
   const doc = new DOMParser().parseFromString(html, "text/html");
-  document.title = doc.title; document.body.replaceWith(document.adoptNode(doc.body)); applyTab();
+  document.title = doc.title; document.body.replaceWith(document.adoptNode(doc.body)); applyTab(); autofocus();
 }
+// A page that focuses its first field on arrival (what a settings form or a dialog's showModal() does): the Stage must keep its keys.
+const autofocus = () => document.querySelector("[data-autofocus]")?.focus();
 document.addEventListener("click", (ev) => {
   const a = ev.target.closest?.("a[href]");
   if (!a || a.origin !== location.origin || ev.metaKey || ev.ctrlKey) return;
   ev.preventDefault(); go(a.pathname + a.search);
 });
 addEventListener("popstate", () => go(location.pathname + location.search, "none"));
-applyTab();
+applyTab(); autofocus();
 installStageBridge({ navigate: (path) => go(path, "replace") });

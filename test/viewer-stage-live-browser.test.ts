@@ -66,6 +66,18 @@ describe("Stage, live with the bridge (serve, cross-origin frame, real pointer)"
     expect(await appFrame(page, spa.app.url).evaluate<string | undefined>("window.__doc")).toBeUndefined(); // a fresh, pristine document
     await page.close();
   });
+  it("keeps the presenter's keys when a view-only page focuses one of its own fields", { timeout: 60000 }, async () => {
+    const page = await openStage(serve.url);
+    await page.keyboard.press("End"); await page.waitForTimeout(600); // /settings focuses its first input on arrival
+    expect(await page.evaluate<string>(`document.querySelector(".stage-title").textContent`)).toBe("Team settings");
+    expect(await page.evaluate<string>("document.activeElement.tagName")).not.toBe("IFRAME"); // focus came back to the Stage
+    await page.keyboard.press("Home"); await page.waitForTimeout(400);
+    expect(await page.evaluate<string>(`document.querySelector(".stage-title").textContent`)).toBe("Home dashboard");
+    await page.keyboard.press("e"); await page.waitForTimeout(200); // Live keeps focus inside the app
+    await page.keyboard.press("End"); await page.waitForTimeout(600);
+    expect(await page.evaluate<string>("document.activeElement.tagName")).toBe("IFRAME");
+    await page.close();
+  });
   it("scrolls the app with the wheel while view-only and carries the Stage locale into the app", { timeout: 60000 }, async () => {
     const page = await openStage(serve.url, 1);
     await page.mouse.move(700, 400); await page.mouse.wheel(0, 700); await page.waitForTimeout(400);
