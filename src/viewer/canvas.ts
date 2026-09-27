@@ -2,10 +2,11 @@
 export class Canvas {
   tx = 0; ty = 0; k = 1; private drag: { x: number; y: number } | null = null;
   constructor(readonly stage: HTMLElement, readonly view: SVGGElement) {
-    stage.addEventListener("pointerdown", (ev) => { if ((ev.target as Element).closest(".frame,.hit,.toolbar,.card,.stub,.tile,text,.presenter-hud,.edge-pill,.player-card,.player-thumb,.player-focus-arrow,.player-view-seg")) return; this.drag = { x: ev.clientX - this.tx, y: ev.clientY - this.ty }; stage.classList.add("dragging"); stage.setPointerCapture(ev.pointerId); });
+    // #player (Play grid and Stage) is a DOM overlay inside #stage: its clicks, drags and wheel scrolling are never canvas gestures.
+    stage.addEventListener("pointerdown", (ev) => { if ((ev.target as Element).closest("#player,.frame,.hit,.toolbar,.card,.stub,.tile,text,.presenter-hud,.edge-pill,.player-card,.player-thumb,.player-focus-arrow,.player-view-seg")) return; this.drag = { x: ev.clientX - this.tx, y: ev.clientY - this.ty }; stage.classList.add("dragging"); stage.setPointerCapture(ev.pointerId); });
     stage.addEventListener("pointermove", (ev) => { if (!this.drag) return; this.tx = ev.clientX - this.drag.x; this.ty = ev.clientY - this.drag.y; this.apply(); });
     stage.addEventListener("pointerup", () => { this.drag = null; stage.classList.remove("dragging"); });
-    stage.addEventListener("wheel", (ev) => { ev.preventDefault(); const r = stage.getBoundingClientRect(); const px = ev.clientX - r.left, py = ev.clientY - r.top; if (ev.ctrlKey || ev.metaKey) this.zoomAt(px, py, Math.exp(-ev.deltaY * 0.01)); else { this.tx -= ev.deltaX; this.ty -= ev.deltaY; this.apply(); } }, { passive: false });
+    stage.addEventListener("wheel", (ev) => { if ((ev.target as Element).closest?.("#player")) return; ev.preventDefault(); const r = stage.getBoundingClientRect(); const px = ev.clientX - r.left, py = ev.clientY - r.top; if (ev.ctrlKey || ev.metaKey) this.zoomAt(px, py, Math.exp(-ev.deltaY * 0.01)); else { this.tx -= ev.deltaX; this.ty -= ev.deltaY; this.apply(); } }, { passive: false });
   }
   apply(): void {
     this.view.setAttribute("transform", `translate(${this.tx},${this.ty}) scale(${this.k})`); this.view.style.setProperty("--tx", String(Math.min(1.3, Math.max(0.45, Math.pow(this.k, -0.85)))));

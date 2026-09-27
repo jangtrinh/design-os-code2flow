@@ -1,0 +1,25 @@
+{
+  "version": 3,
+  "locales": ["en", "vi"],
+  "names": {
+    "shop": { "text": { "en": "Shop", "vi": "Cửa hàng" }, "source": "fixture" },
+    "/": { "text": { "en": "Home dashboard", "vi": "Bảng điều khiển" }, "source": "fixture" },
+    "/orders": { "en": "Open orders", "vi": "Đơn hàng đang mở" },
+    "/orders?tab=archived": { "en": "Archived orders", "vi": "Đơn hàng đã lưu trữ" },
+    "/settings": { "en": "Team settings", "vi": "Cài đặt nhóm" }
+  },
+  "stories": [{
+    "id": "review-orders",
+    "title": { "en": "Review and archive orders", "vi": "Xem và lưu trữ đơn hàng" },
+    "description": { "en": "A store manager checks open orders, then the archive.", "vi": "Quản lý cửa hàng xem đơn đang mở, rồi kho lưu trữ." },
+    "feature": "shop",
+    "entry": "/",
+    "steps": [
+      { "screen": "/", "caption": { "en": "Dana lands on the dashboard: 12 orders are open.", "vi": "Dana vào bảng điều khiển: có 12 đơn đang mở." }, "note": { "en": "Point at the open-orders card; it links to the list.", "vi": "Chỉ vào thẻ đơn đang mở; thẻ dẫn tới danh sách." } },
+      { "screen": "/orders", "via": "Review open orders", "caption": { "en": "Every open order with its customer.", "vi": "Mọi đơn đang mở kèm khách hàng." }, "note": { "en": "Three rows; scroll to show the end of the list.", "vi": "Ba dòng; cuộn để thấy cuối danh sách." }, "cue": { "en": "Click Review open orders.", "vi": "Bấm Review open orders." } },
+      { "screen": "/orders?tab=archived", "via": "Archived", "caption": { "en": "The archive keeps closed orders.", "vi": "Kho lưu trữ giữ các đơn đã đóng." }, "note": { "en": "One archived order, closed on 2 September.", "vi": "Một đơn đã lưu trữ, đóng ngày 2 tháng 9." }, "cue": { "en": "Click the Archived tab.", "vi": "Bấm tab Archived." } },
+      { "screen": "/orders#new-order", "title": { "en": "Start a new order", "vi": "Tạo đơn mới" }, "caption": { "en": "New order asks for a customer first.", "vi": "Đơn mới hỏi khách hàng trước." }, "note": { "en": "A local dialog: open it by hand in Live.", "vi": "Hộp thoại cục bộ: mở bằng tay ở chế độ Live." }, "cue": { "en": "Click New order.", "vi": "Bấm New order." } },
+      { "screen": "/settings", "via": "Settings", "caption": { "en": "Team settings close the tour.", "vi": "Cài đặt nhóm kết thúc chuyến tham quan." }, "note": { "en": "Nothing to change here.", "vi": "Không cần đổi gì ở đây." } }
+    ]
+  }]
+}

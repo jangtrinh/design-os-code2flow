@@ -5,7 +5,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const NAMES = ["map-trifold", "squares-four", "path", "flow-arrow", "app-window", "cards", "tabs", "list-numbers", "caret-left", "caret-right", "caret-down", "caret-up", "arrow-left", "magnifying-glass", "eye", "presentation", "play", "plus", "minus", "corners-out", "x", "check", "code", "file-code", "warning", "link-break", "sidebar-simple", "arrow-u-up-left", "image", "arrow-square-out", "git-branch", "sign-in", "sign-out", "textbox", "cursor-click", "list-bullets", "folder-simple", "stack", "arrows-out-cardinal", "dots-three", "lightning", "funnel", "hash", "keyboard", "link", "question", "prohibit", "arrow-right", "arrow-bend-down-right", "circle", "circle-dashed"];
+const NAMES = ["map-trifold", "squares-four", "path", "flow-arrow", "app-window", "cards", "tabs", "list-numbers", "caret-left", "caret-right", "caret-down", "caret-up", "arrow-left", "magnifying-glass", "eye", "presentation", "play", "plus", "minus", "corners-out", "x", "check", "code", "file-code", "warning", "link-break", "sidebar-simple", "arrow-u-up-left", "image", "arrow-square-out", "git-branch", "sign-in", "sign-out", "textbox", "cursor-click", "list-bullets", "folder-simple", "stack", "arrows-out-cardinal", "dots-three", "lightning", "funnel", "hash", "keyboard", "link", "question", "prohibit", "arrow-right", "arrow-bend-down-right", "circle", "circle-dashed", "closed-captioning", "notepad", "translate", "broadcast"];
 
 // the package exports map hides package.json from resolve(); the install location is fixed anyway
 const pkgDir = join(process.cwd(), "node_modules", "@phosphor-icons", "core");
@@ -21,13 +21,15 @@ export type IconName = ${NAMES.map((n) => JSON.stringify(n)).join(" | ")};
 export const ICON_PATHS: Record<IconName, string> = ${JSON.stringify(paths, null, 0)};
 const SVG_NS = "http://www.w3.org/2000/svg";
 /** Inline HTML icon (currentColor). Phosphor draws on a 256 grid. */
-export function iconHtml(name: IconName, size = 16, cls = "ph"): string {
-  return \`<svg class="\${cls}" width="\${size}" height="\${size}" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="\${ICON_PATHS[name]}"/></svg>\`;
+export function iconHtml(name: IconName, label: string, size = 16, cls = "ph"): string {
+  return \`<svg class="\${cls}" width="\${size}" height="\${size}" viewBox="0 0 256 256" fill="currentColor" role="img" aria-label="\${label}"><title>\${label}</title><path d="\${ICON_PATHS[name]}"/></svg>\`;
 }
 /** Icon as an SVG element for the canvas (fill inherits from the parent's \`fill\`). */
-export function iconSvg(name: IconName, x: number, y: number, size = 14, cls = "ph"): SVGGElement {
+export function iconSvg(name: IconName, label: string, x: number, y: number, size = 14, cls = "ph"): SVGGElement {
   const g = document.createElementNS(SVG_NS, "g"); g.setAttribute("class", cls); g.setAttribute("transform", \`translate(\${x},\${y}) scale(\${size / 256})\`);
-  const p = document.createElementNS(SVG_NS, "path"); p.setAttribute("d", ICON_PATHS[name]); g.append(p); return g;
+  g.setAttribute("role", "img"); g.setAttribute("aria-label", label);
+  const title = document.createElementNS(SVG_NS, "title"); title.textContent = label;
+  const p = document.createElementNS(SVG_NS, "path"); p.setAttribute("d", ICON_PATHS[name]); g.append(title, p); return g;
 }
 `;
 writeFileSync("src/viewer/icons.ts", out);

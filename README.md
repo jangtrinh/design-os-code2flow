@@ -45,11 +45,18 @@ Start with the **[user guide](docs/user-guide.md)** — install to hand-outs, st
 
 ![Present lane](https://raw.githubusercontent.com/jangtrinh/design-os-code2flow/main/docs/assets/present-lane.png)
 
-**Play every step.** Grid view shows every screenshot of a story in order; click a card for Focus view, one step at a time with the evidence beside it.
+**Play every step.** Grid view shows every screenshot of a story in order; click a card to open the Stage on that step.
 
 ![Play gallery](https://raw.githubusercontent.com/jangtrinh/design-os-code2flow/main/docs/assets/play-gallery.png)
 
-![Play focus](https://raw.githubusercontent.com/jangtrinh/design-os-code2flow/main/docs/assets/play-focus.png)
+**Present live.** The Stage shows one story step at audience scale: the running app itself (view only, `E` to take control) when `serve` finds it on this machine, the captured screen otherwise and in every export. Captions, presenter notes (`N`), audience names and languages (`L`) come from the Story Manifest. One optional line in the app keeps stepping free of page reloads:
+
+```ts
+import { installStageBridge } from "design-os-code2flow/stage-bridge";
+if (import.meta.env.DEV) installStageBridge({ navigate: (path) => router.navigate(path) });
+```
+
+![Stage](https://raw.githubusercontent.com/jangtrinh/design-os-code2flow/main/docs/assets/stage-live.png)
 
 **Keep the legend close.** The left rail holds features, stories and the arrow legend; every canvas icon explains itself on hover.
 
@@ -59,7 +66,7 @@ Start with the **[user guide](docs/user-guide.md)** — install to hand-outs, st
 
 - [User guide](docs/user-guide.md)
 - [Getting started](docs/getting-started.md)
-- [Configuration reference](docs/config-reference.md) — `code2flow.config.json`, `code2flow.stories.json`
+- [Configuration reference](docs/config-reference.md) — `code2flow.config.json` (incl. `stage`), `code2flow.stories.json` (v3 captions, notes, names, locales)
 - [Ingestor adapters](docs/adapters.md)
 - [Confidence tiers and capture policy](docs/confidence-and-capture.md)
 - Decisions: [docs/adr/](docs/adr/)

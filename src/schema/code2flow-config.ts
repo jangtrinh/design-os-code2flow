@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { isLoopbackUrl } from "./stage-bridge-protocol.js";
 
 /**
  * `code2flow.config.json` — optional, lives in the target repo root. Everything has a default so
@@ -34,7 +35,21 @@ export interface LoginConfig {
   selectors?: { email?: string; password?: string; submit?: string };
 }
 
+/** Presenter Stage (ADR-0008): where the live app runs and how its frame URL is built. Live is loopback-only. */
+export interface StageConfig {
+  /** live app URL; default `serverUrl`. Must be http(s) on 127.0.0.1, localhost or [::1]. */
+  url?: string;
+  /** false = the Stage always shows captured Screen Previews */
+  live?: boolean;
+  /** extra query parameters for every frame URL, e.g. { "review": "0" } */
+  frameQuery?: Record<string, string>;
+  /** query parameter that carries the Stage locale into the app, e.g. "lang" */
+  localeParam?: string;
+}
+
 export interface Code2FlowConfig {
+  /** Presenter Stage live frame (see StageConfig) */
+  stage?: StageConfig;
   /** locale used to sample `[locale]` routes when the inferred default is wrong (e.g. the default locale redirect-loops locally) */
   locale?: string;
   /** scripted login for apps behind auth (see LoginConfig) */
@@ -74,5 +89,15 @@ export function loadConfig(rootDir: string): Code2FlowConfig {
   if (!raw || typeof raw !== "object") throw new Error(`${CONFIG_FILE} must contain a JSON object`);
   const cfg = raw as Partial<Code2FlowConfig>;
   assertValidFeatureIds(cfg.features, CONFIG_FILE);
+  assertValidStage(cfg.stage);
   return { ...cfg, capture: { ...DEFAULT_CAPTURE, ...(cfg.capture ?? {}) } };
+}
+
+/** The Stage frames a live app only on this machine (ADR-0001/0008): anything else is a config error, not a silent fallback. */
+export function assertValidStage(stage: StageConfig | undefined): void {
+  if (stage == null) return;
+  if (typeof stage !== "object") throw new Error(`${CONFIG_FILE}: "stage" must be an object`);
+  if (stage.url !== undefined && (typeof stage.url !== "string" || !isLoopbackUrl(stage.url))) throw new Error(`${CONFIG_FILE}: stage.url "${String(stage.url)}" must be an http(s) URL on 127.0.0.1, localhost or [::1] (the Stage never frames another machine)`);
+  if (stage.frameQuery !== undefined && (typeof stage.frameQuery !== "object" || Object.values(stage.frameQuery).some((v) => typeof v !== "string"))) throw new Error(`${CONFIG_FILE}: stage.frameQuery must map names to strings`);
+  if (stage.localeParam !== undefined && (typeof stage.localeParam !== "string" || !/^[A-Za-z0-9_-]+$/.test(stage.localeParam))) throw new Error(`${CONFIG_FILE}: stage.localeParam must be a plain query parameter name`);
 }

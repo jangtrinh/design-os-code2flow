@@ -1,13 +1,17 @@
 import type { ScreenNode } from "../schema/index.js";
+import { allNames, allTexts } from "./audience-names.js";
 import { byId, D, escapeHtml as esc, featById, humanize, realTitle, routeOf, routes, routeTitle, state, storyFeature } from "./data-model.js";
 import { cachedFeatureOf as featureOf, featureStats } from "./views-map.js";
 import { createDropdown } from "./dropdown.js";
 import { iconHtml } from "./icons.js";
 import type { Bundle } from "./types.js";
 
+/** Case-, accent- and đ-insensitive text for search ("phe duyet" finds "Phê duyệt"). */
+export const fold = (s: string): string => s.normalize("NFD").replace(/\p{M}/gu, "").replace(/đ/gi, "d").toLowerCase();
+
 const icon = (name: Parameters<typeof iconHtml>[0], label: string, size = 16): string => iconHtml(name, label, size);
 
-export interface NavHandlers { openFeature: (id: string, story: string | null) => void; setStory: (id: string | null) => void; toMap: () => void; toggleDismiss: (v: boolean) => void; gotoScreen: (s: ScreenNode) => void }
+export interface NavHandlers { openFeature: (id: string, story: string | null) => void; setStory: (id: string | null) => void; toMap: () => void; toggleDismiss: (v: boolean) => void; gotoScreen: (s: ScreenNode) => void; /** Play/Stage: open the screen on the Stage */ presentScreen: (s: ScreenNode) => void }
 
 /** Left rail: Feature ▸ Story tree with counts, "Not in a story", options. */
 export function renderRail(h: NavHandlers): void {
@@ -64,17 +68,19 @@ export function applyHash(): boolean {
 /* ---------- search palette ---------- */
 export function setupPalette(h: NavHandlers): { open: () => void; close: () => void; isOpen: () => boolean } {
   const palette = document.getElementById("palette")!, input = document.getElementById("palette-input") as HTMLInputElement, results = document.getElementById("palette-results")!; let index = 0;
-  interface Row { kind: string; title: string; sub: string; go: () => void }
+  interface Row { kind: string; title: string; sub: string; go: () => void; rank: number }
+  // Every word of the query must appear in the row's folded text: its title, id, and Audience Names / story titles in every locale.
   const search = (q: string): Row[] => {
-    const s = q.trim().toLowerCase(); const out: Row[] = [];
-    for (const f of D.features) if (!s || f.title.toLowerCase().includes(s) || f.id.includes(s)) out.push({ kind: "feature", title: f.title, sub: "feature", go: () => h.openFeature(f.id, null) });
-    for (const st of D.stories) if (!s || st.title.toLowerCase().includes(s) || st.id.includes(s)) out.push({ kind: "story", title: st.title, sub: (featById[storyFeature(st)]?.title ?? "") + " · story", go: () => h.openFeature(storyFeature(st), st.id) });
-    for (const sc of D.graph.screens) { const t = sc.kind === "route" ? routeTitle(sc.id) : routeTitle(routeOf(sc.id) ?? sc.id) + " · " + realTitle(sc.id); if (!s || sc.id.toLowerCase().includes(s) || t.toLowerCase().includes(s)) out.push({ kind: sc.kind, title: t, sub: sc.id, go: () => h.gotoScreen(sc) }); }
-    return out.slice(0, 40);
+    const words = fold(q).split(/\s+/).filter(Boolean); const out: Row[] = []; const exact = fold(q.trim());
+    const add = (kind: string, title: string, sub: string, hay: string[], rank: number, go: () => void): void => { const h = fold([title, sub, ...hay].join(" ")); if (words.every((w) => h.includes(w))) out.push({ kind, title, sub, go, rank: fold(title) === exact ? -1 : rank }); };
+    for (const st of D.stories) add("story", st.title, (featById[storyFeature(st)]?.title ?? "") + " · story", allTexts(st.titleText), 0, () => h.openFeature(storyFeature(st), st.id));
+    for (const f of D.features) add("feature", f.title, "feature", [f.id, ...allNames(f.id)], 1, () => h.openFeature(f.id, null));
+    for (const sc of D.graph.screens) { const t = sc.kind === "route" ? routeTitle(sc.id) : routeTitle(routeOf(sc.id) ?? sc.id) + " · " + realTitle(sc.id); add(sc.kind, t, sc.id, allNames(sc.id), sc.kind === "route" ? 2 : 3, () => (state.mode === "play" ? h.presentScreen(sc) : h.gotoScreen(sc))); }
+    return out.sort((a, b) => a.rank - b.rank).slice(0, 40); // stable: same rank keeps data order
   };
   const render = (q: string): void => { const rows = search(q); results.replaceChildren(); rows.forEach((r, i) => { const b = document.createElement("li"); b.setAttribute("role", "option"); b.setAttribute("aria-selected", String(i === index)); b.className = "result" + (i === index ? " on" : ""); b.innerHTML = `<span class="chip medium">${esc(r.kind)}</span><span>${esc(r.title)}</span><span class="mono meta">${esc(r.sub)}</span>`; b.addEventListener("click", () => { close(); r.go(); }); results.append(b); }); results.dataset.count = String(rows.length); };
   const open = (): void => { palette.hidden = false; input.value = ""; index = 0; render(""); input.focus(); };
-  const close = (): void => { palette.hidden = true; };
+  const close = (): void => { palette.hidden = true; input.blur(); }; // a hidden input that kept focus would swallow every presenter key
   input.addEventListener("input", () => { index = 0; render(input.value); });
   input.addEventListener("keydown", (ev) => { const n = +(results.dataset.count ?? 0); if (ev.key === "ArrowDown") { index = Math.min(n - 1, index + 1); render(input.value); ev.preventDefault(); } if (ev.key === "ArrowUp") { index = Math.max(0, index - 1); render(input.value); ev.preventDefault(); } if (ev.key === "Enter") (results.children[index] as HTMLElement | undefined)?.click(); if (ev.key === "Escape") { close(); ev.stopPropagation(); } });
   palette.addEventListener("click", (ev) => { if (ev.target === palette) close(); });

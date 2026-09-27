@@ -8,6 +8,9 @@ import { renderInspect } from "./views-inspect.js";
 import { renderMap } from "./views-map.js";
 import { presenterHud, renderLanes } from "./views-present.js";
 import { renderStoryPlayer } from "./story-player.js";
+import { stageKey, useLiveLayer } from "./stage-view.js";
+import { LiveFrame } from "./stage-live-frame.js";
+import { playStory, rememberStep, resumeStep, stageTargetFor } from "./feature-walk.js";
 import { iconHtml } from "./icons.js";
 
 /** Loads `.code2flow/*` from the serving CLI (or an inlined payload in exports) and boots the canvas. */
@@ -18,6 +21,7 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
   try { data = await loadData(); } catch (err) { emptyState(stage, `Could not load the flow data: ${(err as Error).message}`); return; }
   if (!data.features.length) data.features = defaultFeatures(data.graph.screens.filter((s) => s.kind === "route").map((s) => s.id));
   initData(data);
+  if (data.stage?.live) { const info = data.stage; useLiveLayer((frame) => new LiveFrame(frame, info)); } // serve only: exports never frame an app
   document.title = `${data.productName} · Code2Flow`;
   if (!data.features.length) { emptyState(stage, `No features detected: the graph has ${data.graph.screens.length} screens and no route screens. Run \`code2flow scan\` on the app root (the folder that contains app/ or src/app/).`); return; }
   const view = document.getElementById("view") as unknown as SVGGElement; const svg = view.ownerSVGElement!; svg.querySelector(":scope > title")?.remove(); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", "Flow canvas"); /* aria-label names the canvas for assistive tech without a hover tooltip */ const canvas = new Canvas(stage, view);
@@ -25,7 +29,7 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
   let applyingHash = false;
   const render = (): void => {
     if (printMode && state.mode === "present") state.step = -1; // Hand-outs show the complete lane, never a dimmed focused step.
-    view.replaceChildren(); document.body.classList.toggle("playing", state.mode === "play"); document.body.classList.toggle("presenting", state.mode === "present"); renderRail(nav); renderCrumb(nav);
+    view.replaceChildren(); document.body.classList.toggle("playing", state.mode === "play"); document.body.classList.toggle("presenting", state.mode === "present"); document.body.classList.toggle("staging", state.level === "feature" && state.mode === "play" && state.playFocus); renderRail(nav); renderCrumb(nav);
     const phud = document.getElementById("phud")!;
     phud.hidden = state.mode !== "present";
     if (state.level === "map") { player.hidden = true; renderMap(view, (id) => nav.openFeature(id, null)); canvas.fit(); return; }
@@ -36,8 +40,8 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
       return;
     }
     if (state.mode === "play") {
-      const stories = D.stories.filter((s) => storyFeature(s) === state.feature); const story = stories.find((s) => s.id === (state.story ?? stories[0]?.id));
-      if (story) { state.story = story.id; state.step = Math.min(Math.max(0, state.step), Math.max(0, storyPath(story).length - 1)); }
+      const story = playStory(); // an authored story, or the feature walk (ADR-0008 §1)
+      if (story) { state.story = story.id; state.step = Math.min(Math.max(0, state.step), Math.max(0, storyPath(story).length - 1)); rememberStep(story.id, state.step); }
       renderStoryPlayer(player, story, state.step, state.playFocus, { step: (index) => { state.step = index; go(); }, openFocus: (index) => { state.step = index; state.playFocus = true; go(); }, view: (focus) => { state.playFocus = focus; go(); } });
       return;
     }
@@ -64,7 +68,8 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
   const openStoryOf = (s: ScreenNode): void => { const st = D.stories.find((x) => x.screens.some((id) => routeOf(id) === routeOf(s.id))); if (st && state.story !== st.id) { state.story = st.id; state.selected = s; go(); } };
   const nav: NavHandlers = {
     openFeature: (id, story) => { state.level = "feature"; state.feature = id; state.story = story; state.step = 0; state.selected = null; go(); },
-    setStory: (id) => { state.story = id; state.step = 0; state.selected = null; go(); },
+    setStory: (id) => { state.story = id; state.step = id && state.mode === "play" ? resumeStep(id) : 0; state.selected = null; go(); },
+    presentScreen: (s) => { const target = stageTargetFor(s.id); state.level = "feature"; state.feature = target.feature; state.story = target.story; state.mode = "play"; state.playFocus = true; state.step = target.step; state.selected = null; go(); },
     toMap: () => { state.level = "map"; state.selected = null; go(); },
     toggleDismiss: (v) => { state.showDismiss = v; render(); },
     gotoScreen: (s) => { state.level = "feature"; state.feature = featureOf(s.id); state.story = null; state.mode = "inspect"; state.step = 0; state.selected = s; go(); showDrawer(s, select, openLightbox); canvas.focusOn(routeOf(s.id) ?? s.id); },
@@ -73,14 +78,15 @@ export async function boot(loadData: () => Promise<ViewerData>): Promise<void> {
   const help = document.getElementById("canvas-help")!; const helpPopover = document.getElementById("canvas-help-popover")!;
   help.innerHTML = iconHtml("question", "Legend");
   help.addEventListener("click", () => { const open = helpPopover.hidden; helpPopover.hidden = !open; help.setAttribute("aria-expanded", String(open)); if (open) helpPopover.innerHTML = `<div class="help-row"><span class="help-line high"></span>Solid · high</div><div class="help-row"><span class="help-line medium"></span>Grey · medium</div><div class="help-row"><span class="help-line low"></span>Dashed · review</div><div class="help-row">${iconHtml("link-break", "Broken target")}Broken target</div><div class="help-row">${iconHtml("sidebar-simple", "Shell target")}Shell target</div><div class="help-row">${iconHtml("arrow-u-up-left", "Return action")}Return action</div><div class="help-row">${iconHtml("keyboard", "Keyboard shortcuts")}Arrows · + · − · F</div>`; });
-  document.querySelectorAll<HTMLButtonElement>("#modeSeg button").forEach((b) => b.addEventListener("click", () => { state.mode = b.dataset.mode as "inspect" | "present" | "play"; state.playFocus = false; if (state.level === "map") { state.level = "feature"; state.feature = state.feature ?? [...D.features].sort((a, c) => a.order - c.order)[0]?.id ?? null; } go(); if (state.mode === "inspect" && state.selected) showDrawer(state.selected, select, openLightbox); }));
+  document.querySelectorAll<HTMLButtonElement>("#modeSeg button").forEach((b) => b.addEventListener("click", () => { state.mode = b.dataset.mode as "inspect" | "present" | "play"; state.playFocus = false; if (state.mode === "play" && state.story) state.step = resumeStep(state.story); if (state.level === "map") { state.level = "feature"; state.feature = state.feature ?? [...D.features].sort((a, c) => a.order - c.order)[0]?.id ?? null; } go(); if (state.mode === "inspect" && state.selected) showDrawer(state.selected, select, openLightbox); }));
   document.getElementById("lightbox")!.addEventListener("click", (ev) => { if (!(ev.target as Element).closest(".scroller")) document.getElementById("lightbox")!.hidden = true; });
   stage.addEventListener("click", () => { if (state.mode !== "present" && state.selected) { state.selected = null; closeDrawer(); render(); } });
   window.addEventListener("popstate", () => { if (!applyingHash && applyHash()) { render(); if (state.selected) showDrawer(state.selected, select, openLightbox); } });
   window.addEventListener("keydown", (ev) => {
     const tag = (ev.target as HTMLElement).tagName; if (tag === "INPUT" || tag === "SELECT") return;
-    const fs = D.stories.filter((s) => storyFeature(s) === state.feature); const st = fs.find((s) => s.id === (state.story ?? fs[0]?.id));
+    const fs = D.stories.filter((s) => storyFeature(s) === state.feature); const st = state.mode === "play" ? playStory() : fs.find((s) => s.id === (state.story ?? fs[0]?.id));
     if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "k") { palette.open(); ev.preventDefault(); return; } if (ev.key === "/") { palette.open(); ev.preventDefault(); return; }
+    if (document.body.classList.contains("staging") && !palette.isOpen() && stageKey(ev)) return; // Stage keys: E C N I L F ? Home End, Esc chain
     if (ev.key === "+" || ev.key === "=") { canvas.zoomCenter(1.2); return; }
     if (ev.key === "-" || ev.key === "_") { canvas.zoomCenter(1 / 1.2); return; }
     if (ev.key === "f" || ev.key === "F") { canvas.fit(); return; }
@@ -102,10 +108,12 @@ export async function loadServed(): Promise<ViewerData> {
   const graphRes = await fetch("/data/graph.json"); if (!graphRes.ok) throw new Error(`/data/graph.json → ${graphRes.status}; run \`code2flow scan\` and restart \`serve\``);
   const graph = (await graphRes.json()) as ViewerData["graph"];
   const [meta, titles, urls, storiesFile, config, info] = await Promise.all([ j<Record<string, ShotMeta>>("/data/shots-meta.json", {}), j<Record<string, ScreenTitles>>("/data/titles.json", {}), j<Record<string, string | null>>("/data/url-map.json", {}),
-    j<{ stories?: ViewerData["stories"]; features?: ViewerData["features"] }>("/data/stories.json", {}), j<{ features?: ViewerData["features"] }>("/data/config.json", {}), j<{ product: string; shotIndex: Record<string, string> }>("/data/info.json", { product: "Code2Flow", shotIndex: {} }),
+    j<{ stories?: ViewerData["stories"]; features?: ViewerData["features"]; locales?: string[]; names?: ViewerData["names"] }>("/data/stories.json", {}), j<{ features?: ViewerData["features"] }>("/data/config.json", {}), j<{ product: string; shotIndex: Record<string, string> }>("/data/info.json", { product: "Code2Flow", shotIndex: {} }),
   ]);
   const idx = info.shotIndex;
+  const stage = await j<ViewerData["stage"]>("/data/stage.json", { live: false, url: null, origin: null, reason: "no stage info from serve", frameQuery: {}, localeParam: null });
   return { graph, meta, titles, urls, stories: storiesFile.stories ?? [], features: (storiesFile.features ?? config.features ?? []).map((f, i) => ({ ...f, order: f.order ?? i })), productName: info.product, // manifest wins over config (ADR-0007)
+    locales: storiesFile.locales ?? [], names: storiesFile.names ?? {}, stage,
     shotUrl: (id) => (id in idx && meta[id] ? `/shots/${idx[id]}.jpg` : null), dialogUrl: (id) => (id in idx && meta[id]?.dialog ? `/shots/${idx[id]}-dialog.jpg` : null) };
 }
 

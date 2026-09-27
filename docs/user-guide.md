@@ -105,17 +105,57 @@ Choose **Present** to show one canvas lane at a time. Both sidebars are hidden s
 
 *Caption: Present mode removes the rails and leaves one story lane on the canvas.*
 
-### Play every step
+### Play every step, then present it on the Stage
 
-Choose **Play** to see a grid of every step in the selected story. Click a card to open Focus view: one step at a time with prev/next arrows, a `3 / 4` chip and the Play panel evidence beside it. Arrow keys move between steps in both views; `Escape` returns from Focus to the grid. The two buttons at the top of the Play panel switch views.
+Choose **Play** to see a grid of every step in the selected story. Click a card (or press `Enter`) to open the **Stage**: one step at audience scale, with the story title and `3 / 4` counter in the dock, the step's caption under the screen, and a filmstrip of the story's screens. Arrow keys move between steps in both views; `Escape` returns from the Stage to the grid. Existing `…/play/<n>/focus` links open the Stage.
 
 ![Play gallery](assets/play-gallery.png)
 
 *Caption: Play mode puts every story step in a selectable capture gallery.*
 
-![Play focus](assets/play-focus.png)
+![Stage](assets/stage-live.png)
 
-*Caption: Focus view shows one step with its evidence; click a grid card to enter it.*
+*Caption: The Stage shows one step at audience scale; here the running app, view only, with the caption band and the filmstrip.*
+
+What the Stage shows depends on where you are:
+
+| Where | Screen shown | Source chip |
+| --- | --- | --- |
+| `code2flow serve` with the app running on this machine | The live app, view only; `E` hands it your clicks and keys | *Live app, view only* / *Live: you control the app* |
+| `serve` without a reachable app, or `serve --no-live` | The captured Screen Preview | *Captured screen* and the one-line reason in the tooltip and the serve log |
+| An export (hand-out) | The captured Screen Preview, always | *Captured screen* |
+
+Live view needs all of: `serve` (not an export), a `stage.url` or `serverUrl` in `code2flow.config.json` that points at `127.0.0.1`, `localhost` or `[::1]`, an app that answers there when `serve` starts, and no `X-Frame-Options` / `frame-ancestors` refusal from the app. When any of these is missing the Stage stays captured and says why (`stage  captured · nothing answers at http://127.0.0.1:3000`). A step whose screen has no URL (a `#` local-state overlay) shows its capture with the trigger label so you can open it by hand in Live.
+
+Stepping without a page reload needs the **Stage bridge** in the app, one line in development only:
+
+```ts
+import { installStageBridge } from "design-os-code2flow/stage-bridge";
+if (import.meta.env.DEV) installStageBridge({ navigate: (path) => router.navigate(path) });
+```
+
+Without it every step is a page load (the chip says *each step reloads the page*), view-only cannot scroll the app, and Live shows an **Exit live** button because keys inside the app cannot reach the Stage. The bridge activates only when the app is framed by the Stage on `127.0.0.1:4317`, and it never sends page content to the viewer.
+
+![Stage notes](assets/stage-notes.png)
+
+*Caption: `N` opens the presenter notes beside the step: the cue (what to do) and the note (what to point at).*
+
+Stage keys:
+
+| Key | Action |
+| --- | --- |
+| `←` / `→`, `Page Up` / `Page Down` | Previous / next step. |
+| `Home` / `End` | First / last step. |
+| `E` | Live: the app takes your clicks and keys. Stepping or `Escape` leaves Live and restores the step. |
+| `C` | Show or hide the caption band. |
+| `N` | Presenter notes (cue + note). |
+| `I` | Evidence: the trigger, confidence and `file:line` of this step. |
+| `L` | Next language from the manifest's `locales`; the app follows when `stage.localeParam` is set. |
+| `F` | Full screen. |
+| `?` | This list. |
+| `Escape` | Leave Live, then close the panel, then back to the grid. |
+
+Captions, notes, cues, the audience names of screens and the languages come from the Story Manifest (v3); see [the configuration reference](config-reference.md#code2flowstoriesjson-story-manifest). Without them the Stage shows the captured screen titles.
 
 ### Read State Screens and zoom
 
@@ -129,7 +169,7 @@ Use the mouse wheel or pinch gesture to zoom, and drag to pan. The canvas delibe
 
 | Key | Action |
 | --- | --- |
-| `⌘K` or `Ctrl+K` | Find a screen or story. |
+| `⌘K` or `Ctrl+K` | Find a screen or story by its audience name, real title or id (accents optional: `phe duyet` finds `Phê duyệt`). In Play or on the Stage, `Enter` opens the Stage. |
 | `/` | Open the same finder. |
 | `+` / `-` | Zoom in / out. |
 | `F` | Fit the canvas. |
@@ -229,5 +269,8 @@ If the agent cannot find the skill: copy the package's `.claude/skills/` directo
 | Dynamic route without a sample | Code2Flow knows `/products/[slug]` but not a concrete product URL. | Add a full URL to `routeExamples` in `code2flow.config.json`. |
 | `[locale]` routes fail with a redirect loop | The app`s default locale is rewritten by its middleware locally (`ERR_TOO_MANY_REDIRECTS`). | Set `"locale": "en"` (a locale that answers 200) in `code2flow.config.json` and run again. |
 | Export split around 14 MB | One offline HTML would be too large to share comfortably. | Send the per-feature HTML files; each opens offline and retains the whole graph. |
+| Stage says *captured · nothing answers at …* | `serve` probed `stage.url` (or `serverUrl`) at start and nothing answered. | Start the app on that URL, then restart `serve`. |
+| Stage says *the app refuses framing* | The app sends `X-Frame-Options` or a `frame-ancestors` CSP. | Relax it in development only, or present from captures. |
+| Stage says *each step reloads the page* | The app has no Stage bridge. | Add the one-line bridge above (development only), or accept a page load per step. |
 
 For configuration details, read the [configuration reference](config-reference.md). For capture and Transition Confidence rules, read [confidence and capture](confidence-and-capture.md).

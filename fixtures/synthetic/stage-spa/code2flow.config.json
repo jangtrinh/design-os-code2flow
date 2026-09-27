@@ -1,0 +1,4 @@
+{
+  "features": [{ "id": "shop", "title": "Shop", "match": ["/", "/orders", "/settings"] }],
+  "stage": { "frameQuery": { "demo": "1" }, "localeParam": "lang" }
+}

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { loadConfig } from "../schema/code2flow-config.js";
 import { featureIdFor } from "../schema/feature-match.js";
-import { loadManifest, type Story } from "../schema/story-manifest.js";
+import { loadManifest, textOf, type Story } from "../schema/story-manifest.js";
 import type { CanonicalFlowGraph } from "../schema/index.js";
 
 export interface RenderView { id: string; title: string; hash: string; file: string }
@@ -29,7 +29,7 @@ export function renderViews(rootDir: string, flags: Record<string, string | true
   for (const story of selectedStories) {
     const feature = storyFeature(story, featureOf);
     // Present lanes give hand-outs their story ordering; omit a step so no frame is focused or dimmed.
-    views.push({ id: `story:${story.id}`, title: story.title, hash: `#f/${encodeURIComponent(feature)}/s/${encodeURIComponent(story.id)}/present`, file: `${safe(product)}-${safe(feature)}-${safe(story.id)}.png` });
+    views.push({ id: `story:${story.id}`, title: textOf(story.title, undefined, manifest?.locales), hash: `#f/${encodeURIComponent(feature)}/s/${encodeURIComponent(story.id)}/present`, file: `${safe(product)}-${safe(feature)}-${safe(story.id)}.png` });
   }
   return views;
 }

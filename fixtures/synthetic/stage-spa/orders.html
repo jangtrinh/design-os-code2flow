@@ -1,0 +1,6 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Orders</title><link rel="stylesheet" href="/app.css"><script type="module" src="/stage-app.js"></script></head><body><div class="shell"><nav><a href="index.html">Home</a><a href="orders.html" aria-current="page">Orders</a><a href="settings.html">Settings</a></nav><main><h1>Orders</h1><div class="tabs" role="tablist"><a role="tab" href="orders.html?tab=open">Open</a><a role="tab" href="orders.html?tab=archived">Archived</a></div>
+<button onclick="document.getElementById('new-order').showModal()">New order</button>
+<section data-tab="open"><table><thead><tr><th>Order</th><th>Customer</th><th>Status</th></tr></thead><tbody><tr><td>#1042</td><td>Acme Retail</td><td>Open</td></tr><tr><td>#1043</td><td>Blue Harbor</td><td>Open</td></tr><tr><td>#1044</td><td>Cedar Labs</td><td>Open</td></tr></tbody></table></section>
+<section data-tab="archived" hidden><table><thead><tr><th>Order</th><th>Customer</th><th>Closed</th></tr></thead><tbody><tr><td>#0998</td><td>Delta Foods</td><td>2 Sep</td></tr></tbody></table></section>
+<div class="tall"></div><p id="orders-bottom">End of orders</p>
+<dialog id="new-order"><h2>New order</h2><p>Pick a customer.</p><form method="dialog"><button>Close</button></form></dialog></main></div></body></html>

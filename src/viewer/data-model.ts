@@ -1,5 +1,6 @@
 import { featureIdFor, routeTopSegment, withoutLocaleSegment } from "../schema/feature-match.js";
 import type { ScreenNode } from "../schema/index.js";
+import { audienceName, initAudience } from "./audience-names.js";
 import type { Feature, Story, StoryStep, ViewerData, ViewState } from "./types.js";
 
 export const DISMISS = /cancel|close|dismiss|back|✕|^Dialog|^Drawer|^Sheet/i;
@@ -25,6 +26,7 @@ export function initData(data: ViewerData): void {
   for (const f of data.features) featById[f.id] = f;
   // v2 stories may name `steps`/`branches` and omit `screens`; every view (rail, present, drop targets) reads `screens`.
   for (const st of data.stories) if (!st.screens || !st.screens.length) st.screens = deriveStoryScreens(st);
+  initAudience(data);
 }
 
 /** Every screen id named anywhere in a story: the main path plus every branch (round-1 finding: navigation.ts:19 crashed on a `screens`-less v2 story). */
@@ -73,10 +75,11 @@ export function normalizeSteps(steps: (string | StoryStep)[]): StoryStep[] { ret
 export function storyPath(st: Story): StoryStep[] { return normalizeSteps(st.steps?.length ? st.steps : st.screens); }
 
 export function humanize(id: string): string { const seg = id.split("/").filter(Boolean).pop() ?? "home"; return seg.replace(/[-_[\].]+/g, " ").trim().replace(/\s+/g, " ").replace(/^\w/, (c) => c.toUpperCase()); }
-export function routeTitle(id: string): string { const t = D.titles[id]; return t?.h1 || byId.get(id)?.title || humanize(id); }
+/** Audience Name (Story Manifest v3) first, then the captured `h1`, the detected title, the humanized id. */
+export function routeTitle(id: string): string { const t = D.titles[id]; return audienceName(id) || t?.h1 || byId.get(id)?.title || humanize(id); }
 export function realTitle(id: string): string {
   const t = D.titles[id] ?? { h1: "", dialogTitle: "", activeTab: "" };
-  const s = byId.get(id);
+  const s = byId.get(id); const authored = audienceName(id); if (authored) return authored;
   if (!s || s.kind === "route") return t.h1 || s?.title || humanize(id);
   if (t.dialogTitle) return t.dialogTitle;
   if (s.kind === "tab" && t.activeTab) return t.activeTab.replace(/\s*\d+$/, "");

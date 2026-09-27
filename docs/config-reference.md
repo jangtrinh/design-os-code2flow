@@ -21,7 +21,13 @@ Two optional files in the **target repo** root. Everything has a default; the fi
   },
   "serverUrl": "http://127.0.0.1:3000",   // used when `snapshot` is run without --url
   "devCommand": "npm run dev",             // executed with your shell in the target repo — treat like a package script
-  "storageState": ".code2flow/storage-state.json"  // Playwright session for apps behind a login (relative to this repo; this path is the default when the file exists)
+  "storageState": ".code2flow/storage-state.json",  // Playwright session for apps behind a login (relative to this repo; this path is the default when the file exists)
+  "stage": {                          // Presenter Stage live frame (serve only); every field optional
+    "url": "http://127.0.0.1:3000",   // default: serverUrl; must be 127.0.0.1, localhost or [::1] — anything else is a config error
+    "live": true,                     // false = the Stage always shows captures
+    "frameQuery": { "review": "0" },  // appended to every frame URL (hide an in-app overlay, pick a preview mode)
+    "localeParam": "lang"             // the frame URL carries ?lang=<Stage locale>; absent = the app's language is untouched
+  }
 }
 ```
 
@@ -29,10 +35,11 @@ Two optional files in the **target repo** root. Everything has a default; the fi
 
 - `match` accepts an exact path or `/prefix/**`. First match wins. Routes matched by nothing fall back to their top segment; `/`, `/settings…`, `/notifications` go to `account`.
 - Route samples are resolved in order: string-literal hrefs in the code → links discovered on captured pages → `routeExamples` → the `needs-sample` counter (and lint finding).
+- `stage`: `serve` probes `stage.url ?? serverUrl` once at start (any HTTP answer counts, redirects are not followed, 10 s budget for a slow dev server; reads `X-Frame-Options` and `frame-ancestors`) and logs `stage  live <url>` or `stage  captured · <reason>`. Only when live does the served viewer's CSP gain `frame-src <origin>`; exports never do. `serve --no-live` forces captures. The frame URL for a step is the screen's captured URL (`url-map.json`) plus `frameQuery`, `c2f-stage=1` and `<localeParam>=<locale>`.
 
 ## `code2flow.stories.json` (Story Manifest)
 
-Produced from a PRD by `code2flow stories scaffold` + the `code2flow-stories-from-prd` skill, or written by hand. v1 files (only `screens`) stay valid.
+Produced from a PRD by `code2flow stories scaffold` + the `code2flow-stories-from-prd` skill, or written by hand. v1 files (only `screens`) and v2 files stay valid; v3 adds optional audience copy for the Stage.
 
 ```jsonc
 {
@@ -55,6 +62,38 @@ Produced from a PRD by `code2flow stories scaffold` + the `code2flow-stories-fro
 ```
 
 `screens` may be omitted in v2: it is derived from `steps` and `branches`. `code2flow stories validate` reports: a step without a `screen` id (error), unknown screen ids (warn), entry not in screens (warn), duplicate ids / empty screens (error), and for every consecutive `steps`/`branches` pair with no detected transition: *asserted by the PRD, not found in code* (warn), suffixed *"(endpoint not in graph)"* when either screen is itself unknown. That last one is the drift signal; it is never auto-fixed or silently skipped even when an endpoint is a ghost screen — a ghost step gets both the unknown-screen warning and the no-transition warning.
+
+### v3: audience copy for the Stage
+
+```jsonc
+{
+  "version": 3,
+  "locales": ["en", "vi"],                       // first = default; absent → one unnamed locale
+  "names": {                                      // Audience Names, used by every view (map, rail, palette, Stage)
+    "idp": { "text": { "en": "Identity provider", "vi": "Nhà cung cấp danh tính" }, "source": "docs/product-map.md" },
+    "/idp/approvals": { "en": "Approvals inbox", "vi": "Hộp thư phê duyệt" }
+  },
+  "stories": [{
+    "id": "approve-request",
+    "title": { "en": "Approve or reject a pending request", "vi": "Duyệt hoặc từ chối một yêu cầu" },
+    "description": { "en": "…", "vi": "…" },
+    "feature": "idp", "entry": "/idp/approvals",
+    "steps": [
+      { "screen": "/idp/approvals",
+        "caption": { "en": "The approver sees every pending request.", "vi": "Người duyệt thấy mọi yêu cầu đang chờ." },
+        "note": { "en": "Three requests, newest first.", "vi": "Ba yêu cầu, mới nhất trước." } },
+      { "screen": "/idp/approvals?modal=approve-confirm", "via": "Approve",
+        "title": { "en": "Confirm the approval", "vi": "Xác nhận phê duyệt" },
+        "cue": { "en": "Click Approve on the first row.", "vi": "Bấm Approve ở dòng đầu." },
+        "caption": { "en": "A confirm dialog names the request before anything changes.", "vi": "Hộp thoại xác nhận nêu tên yêu cầu trước khi thay đổi." } }
+    ]
+  }]
+}
+```
+
+Every text field (`title`, `description`, `caption`, `note`, `cue`, `names` values) is a plain string (the default locale) or one string per locale. `caption` is read by the audience under the screen; `note` and `cue` are presenter-only (`N` on the Stage) but travel with the manifest into exports. `via` keeps its meaning: the Action Trigger label matched against detected edges, never a sentence. Names resolve `names[id]` → captured real title → humanized id; a step `title` overrides the name inside that story only. `L` on the Stage cycles `locales`.
+
+`code2flow stories validate` adds (all warnings): a story `feature` that is no feature id in the config or the manifest (the viewer ignores its hash), a locale missing from any text, a `names` key that is neither a feature id in this manifest nor a screen id, two names in one manifest showing the same text, v3 fields on a file that still says `"version": 2`, and a `via` longer than 60 characters or containing sentence punctuation (*reads like a sentence: via is the Action Trigger label; put directions in "cue"*).
 
 Feature ids (in either file) must match `^[a-z0-9][a-z0-9._-]*$` — they end up in export filenames and the viewer's URL hash, so anything else is rejected with a one-line error.
 

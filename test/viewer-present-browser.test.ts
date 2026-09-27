@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { exportCommand } from "../src/cli/export-command.js";
 import { scanCommand } from "../src/cli/scan-command.js";
 import { launchBrowser, resolvePlaywright } from "../src/snapshot/playwright-runtime.js";
+import { BROWSER_HOOK_MS, closeBrowser } from "./helpers/close-browser.js";
 import { shotFiles } from "../src/snapshot/shot-file-key.js";
 import { buildViewer } from "../scripts/build-viewer.js";
 import { copyFixture } from "./helpers/fixture-copy.js";
@@ -34,7 +35,7 @@ beforeAll(async () => {
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } }); page = (await ctx.newPage()) as unknown as Page;
   page.on("pageerror", (e) => errors.push("pageerror: " + e.message)); page.on("console", (m) => { if (m.type?.() === "error") errors.push("console: " + m.text?.()); });
 }, 60000);
-afterAll(async () => { await browser?.close(); fx.cleanup(); });
+afterAll(async () => { await closeBrowser(browser); fx.cleanup(); }, BROWSER_HOOK_MS);
 
 const open = async (hash: string): Promise<void> => { await page.goto(`file://${html}${hash}`, { waitUntil: "load" }); await page.waitForTimeout(500); };
 const count = (sel: string): Promise<number> => page.evaluate<number>(`document.querySelectorAll(${JSON.stringify(sel)}).length`);
@@ -128,8 +129,8 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     await (page as unknown as { click(selector: string): Promise<void> }).click('#player .player-card[data-step="2"]');
     await page.waitForTimeout(200);
     expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/2/focus");
-    expect(await count("#player .player-focus")).toBe(1);
-    expect(await page.evaluate<string>(`document.querySelector('.player-focus img')?.getAttribute('src') ?? ''`)).toBe(stepThreeShot);
+    expect(await count("#player .stage")).toBe(1); // Focus is the Stage (ADR-0008)
+    expect(await page.evaluate<string>(`document.querySelector('.stage-capture img')?.getAttribute('src') ?? ''`)).toBe(stepThreeShot);
     await page.keyboard.press("ArrowRight"); await page.waitForTimeout(200);
     expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/3/focus");
     await page.keyboard.press("Escape"); await page.waitForTimeout(200);
@@ -137,12 +138,11 @@ describe("viewer in a real browser (seam: exported HTML, no network)", () => {
     expect(await count("#player .player-gallery")).toBe(1);
     expect(await page.evaluate<number>(`[...document.querySelectorAll('#player .player-card')].findIndex((card) => card.classList.contains('on'))`)).toBe(3);
   });
-  it("loads a Focus hash directly and exposes its view control", async () => {
+  it("loads a Focus hash directly as the Stage and returns to the grid with its back control", async () => {
     await open("#f/shop/s/buy/play/1/focus");
-    expect(await count("#player .player-focus")).toBe(1);
-    expect(await count('.player-view-seg [title="Grid view"]')).toBe(1);
-    expect(await count('.player-view-seg [title="Focus view"]')).toBe(1);
-    await (page as unknown as { click(selector: string): Promise<void> }).click('.player-view-seg [title="Grid view"]');
+    expect(await count("#player .stage")).toBe(1);
+    expect(await count('.stage-back[aria-label="Back to all steps"]')).toBe(1);
+    await (page as unknown as { click(selector: string): Promise<void> }).click(".stage-back");
     expect(await page.evaluate<string>("location.hash")).toBe("#f/shop/s/buy/play/1");
     expect(await count("#player .player-gallery")).toBe(1);
   });
