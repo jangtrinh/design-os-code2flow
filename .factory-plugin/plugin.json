@@ -1,0 +1,22 @@
+{
+  "name": "design-os-code2flow",
+  "description": "Local-first AST codebase-to-user-flow mapper and 11-heuristic UX gap auditor across 7 frontend and mobile frameworks.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jang Trinh",
+    "url": "https://github.com/jangtrinh"
+  },
+  "homepage": "https://jangtrinh.github.io/design-os-code2flow/",
+  "repository": "https://github.com/jangtrinh/design-os-code2flow",
+  "license": "MIT",
+  "keywords": [
+    "code2flow",
+    "user-flow",
+    "ux-audit",
+    "static-analysis",
+    "nextjs",
+    "swiftui",
+    "mermaid",
+    "design-os"
+  ]
+}

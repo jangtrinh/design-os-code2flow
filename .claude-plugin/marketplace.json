@@ -1,0 +1,15 @@
+{
+  "name": "design-os-code2flow",
+  "metadata": {
+    "description": "Local-first AST codebase-to-user-flow mapper and 11-heuristic UX gap auditor across 7 frontend and mobile frameworks."
+  },
+  "owner": {
+    "name": "Jang Trinh"
+  },
+  "plugins": [
+    {
+      "name": "design-os-code2flow",
+      "source": "./"
+    }
+  ]
+}
