@@ -1,0 +1,32 @@
+# design-os-code2flow
+
+> Local-first CLI and programmatic SDK that statically analyzes Next.js, React Router, TanStack, Expo, SwiftUI, Flutter, and Jetpack Compose into Mermaid flows and UX gap reports.
+
+Turn any frontend or mobile codebase into a complete user-flow map and 11-heuristic UX audit.
+
+## Documentation
+
+- [Overview](https://jangtrinh.github.io/design-os-code2flow/): Main project overview, features, and evidence.
+- [Repository](https://github.com/jangtrinh/design-os-code2flow): GitHub repository, source code, and release tags.
+
+## Core Features & Architecture
+
+- **Primary Interface**: CLI and programmatic API.
+- **Verification Gates**: Rigorous automated checks with reproducible evidence.
+- **Deterministic Workflows**: Predictable outputs and contract enforcement.
+
+## DESIGN:OS Ecosystem
+
+- [DESIGN:OS CLI](https://jangtrinh.github.io/design-os/): Multi-runtime design CLI for Claude Code, Codex & Antigravity.
+- [Knowledge Builder](https://jangtrinh.github.io/design-os-knowledge-builder/): Multimodal knowledge compiler with UKMC.v1 contract & epistemic gate.
+- [Figma Plugin & CLI](https://jangtrinh.github.io/design-os-figma-plugin/): Live canvas bridge for AI coding agents on Figma Free.
+- [SVG Animation Engine](https://jangtrinh.github.io/design-os-svg-animation/): Deterministic vector animation & 1080p 60fps video pipeline.
+- [3D Blender Agent](https://jangtrinh.github.io/design-os-3d-blender/): Mechanical parts generation with embedded Three.js CAD viewer.
+- [OPAH ONE](https://jangtrinh.github.io/design-os-drone-showcase/): 249g indoor drone showcase with scroll-scrub kinematics.
+- [GitHub Pages Engine](https://jangtrinh.github.io/design-os-github-page/): 9-tier zero-dependency scaffolder with SEO, AEO & GEO.
+- [Apple Design OS](https://jangtrinh.github.io/design-os-apple/): Native SwiftUI 6.2 component system for iOS, iPadOS & macOS.
+- [Agent Teacher](https://jangtrinh.github.io/design-os-pedagogy/): Evidence-graded pedagogy library and curriculum tree runtime.
+- [Origami CAD](https://jangtrinh.github.io/design-os-origami/): Parametric packaging dielines, spot-color PDFs & 3D fold previews.
+- [Voice UX & AI Agent Architecture](https://jangtrinh.github.io/design-os-voice-ux/): Full-duplex barge-in FSMs & sub-500ms voice specs.
+- [Code2Flow](https://jangtrinh.github.io/design-os-code2flow/): Local-first codebase-to-user-flow audit CLI across 7 UI frameworks.
+- [Generative UI](https://jangtrinh.github.io/design-os-generative-ui/): Streaming interactive visual runtime with morphdom & WebGL.

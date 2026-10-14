@@ -1,0 +1,33 @@
+# GitHub Pages site for design-os-code2flow, built from this docs/ folder.
+# _layouts/default.html wraps every Markdown page in the landing's design language;
+# index.html is a hand-built page (layout: null) sharing assets/site.css.
+# jekyll-seo-tag emits <title>, <meta name="description">, Open Graph and JSON-LD;
+# jekyll-sitemap emits sitemap.xml for Google Search Console.
+title: design-os-code2flow
+description: Local-first CLI and programmatic SDK that statically analyzes Next.js, React Router, TanStack, Expo, SwiftUI, Flutter, and Jetpack Compose into Mermaid flows and UX gap reports.
+url: https://jangtrinh.github.io
+baseurl: /design-os-code2flow
+lang: en
+repository: jangtrinh/design-os-code2flow
+repository_url: https://github.com/jangtrinh/design-os-code2flow
+wordmark: DESIGN:OS
+wordmark_url: https://jangtrinh.github.io/design-os/
+eyebrow: DESIGN:OS · AST Audit          # short product family label, e.g. design:os
+logo: /images/cover.png          # a real capture under docs/images/
+nav:                        # one entry per Markdown page under docs/, in reading order
+  - { title: Deep dive, url: /deep-dive.html }
+footer:
+  - { title: GitHub, url: https://github.com/jangtrinh/design-os-code2flow }
+  - { title: MIT, url: https://github.com/jangtrinh/design-os-code2flow/blob/main/LICENSE }
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-relative-links
+relative_links:
+  enabled: true
+  collections: false
+defaults:
+  - scope: { path: "" }
+    values: { layout: default }
+  - scope: { path: "google*.html" }
+    values: { sitemap: false }
