@@ -2,6 +2,11 @@
 
 All notable changes to `design-os-code2flow` are documented in this file.
 
+## [0.4.1] - 2026-10-20
+
+### Changed
+- License changed from MIT to the [PolyForm Shield License 1.0.0](LICENSE): free to use and modify, including for commercial work, but not to resell or to offer a competing product. Versions published before this release remain under MIT.
+
 ## [1.0.0] - 2026-10-14
 
 ### Added
