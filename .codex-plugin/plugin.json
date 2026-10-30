@@ -38,6 +38,7 @@
       "Export a JSON + Markdown user-flow topology report for our PR review gate."
     ],
     "brandColor": "#202020",
+    "composerIcon": "./docs/images/composer-icon.svg",
     "logo": "./docs/images/cover.png"
   }
 }
