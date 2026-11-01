@@ -4,6 +4,8 @@
 
 Statically analyze Next.js, React Router, TanStack Router, Expo Router, SwiftUI, Flutter, and Jetpack Compose repositories to generate Mermaid user-flow graphs and catch dead-end screens, missing error boundaries, and unguarded auth routes.
 
+**design-os-code2flow is free** to use and modify. Source-available under PolyForm Shield 1.0.0. It runs locally and works with Claude Code, Codex, Gemini CLI and Antigravity.
+
 <p align="center">
   <img src="docs/images/cover.png" alt="DESIGN:OS Code2Flow — 2:1 Axonometric Technical Architecture" width="840">
 </p>
